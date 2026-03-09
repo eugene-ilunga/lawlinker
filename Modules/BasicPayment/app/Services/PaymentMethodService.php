@@ -180,7 +180,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => $basicPayment->stripe_image ? asset($basicPayment->stripe_image) : asset('uploads/website-images/stripe.png'),
             self::PAYPAL => $basicPayment->paypal_image ? asset($basicPayment->paypal_image) : asset('uploads/website-images/paypal.png'),
             self::BANK_PAYMENT => $basicPayment->bank_image ? asset($basicPayment->bank_image) : asset('uploads/website-images/bank-pay.png'),
-            self::FRESHPAY => $basicPayment->freshpay_image ? asset($basicPayment->freshpay_image) : asset('uploads/website-images/freshpay.png'),
+            self::FRESHPAY => ($basicPayment->freshpay_image ?? null) ? asset($basicPayment->freshpay_image) : asset('uploads/website-images/freshpay.png'),
             default => null,
         };
     }
@@ -202,23 +202,23 @@ class PaymentMethodService implements PaymentMethodInterface {
         $gateways = [
             self::STRIPE       => [
                 'name'   => 'Stripe',
-                'logo'   => asset($basicPayment->stripe_image ?? 'uploads/website-images/stripe.png'),
-                'status' => $basicPayment->stripe_status == $activeStatus,
+                'logo'   => asset(data_get($basicPayment, 'stripe_image', 'uploads/website-images/stripe.png')),
+                'status' => data_get($basicPayment, 'stripe_status') == $activeStatus,
             ],
             self::PAYPAL       => [
                 'name'   => 'PayPal',
-                'logo'   => asset($basicPayment->paypal_image ?? 'uploads/website-images/paypal.png'),
-                'status' => $basicPayment->paypal_status == $activeStatus,
+                'logo'   => asset(data_get($basicPayment, 'paypal_image', 'uploads/website-images/paypal.png')),
+                'status' => data_get($basicPayment, 'paypal_status') == $activeStatus,
             ],
             self::BANK_PAYMENT => [
                 'name'   => 'Bank Payment',
-                'logo'   => asset($basicPayment->bank_image ?? 'uploads/website-images/bank-pay.png'),
-                'status' => $basicPayment->bank_status == $activeStatus,
+                'logo'   => asset(data_get($basicPayment, 'bank_image', 'uploads/website-images/bank-pay.png')),
+                'status' => data_get($basicPayment, 'bank_status') == $activeStatus,
             ],
             self::FRESHPAY => [
                 'name' => 'FreshPay',
-                'logo' => asset($basicPayment->freshpay_image ?? 'uploads/website-images/freshpay.png'),
-                'status' => $basicPayment->freshpay_status == $activeStatus,
+                'logo' => asset(data_get($basicPayment, 'freshpay_image', 'uploads/website-images/freshpay.png')),
+                'status' => data_get($basicPayment, 'freshpay_status', 'inactive') == $activeStatus,
             ],
         ];
 
@@ -340,23 +340,23 @@ class PaymentMethodService implements PaymentMethodInterface {
         $gateways = [
             [
                 'method' => self::STRIPE,
-                'image'  => $basicPayment->stripe_image ?? 'uploads/website-images/stripe.png',
-                'status' => $basicPayment->stripe_status == $activeStatus ? 'active' : 'inactive',
+                'image'  => data_get($basicPayment, 'stripe_image', 'uploads/website-images/stripe.png'),
+                'status' => data_get($basicPayment, 'stripe_status') == $activeStatus ? 'active' : 'inactive',
             ],
             [
                 'method' => self::PAYPAL,
-                'image'  => $basicPayment->paypal_image ?? 'uploads/website-images/paypal.png',
-                'status' => $basicPayment->paypal_status == $activeStatus ? 'active' : 'inactive',
+                'image'  => data_get($basicPayment, 'paypal_image', 'uploads/website-images/paypal.png'),
+                'status' => data_get($basicPayment, 'paypal_status') == $activeStatus ? 'active' : 'inactive',
             ],
             [
                 'method' => self::BANK_PAYMENT,
-                'image'  => $basicPayment->bank_image ?? 'uploads/website-images/bank-pay.png',
-                'status' => $basicPayment->bank_status == $activeStatus ? 'active' : 'inactive',
+                'image'  => data_get($basicPayment, 'bank_image', 'uploads/website-images/bank-pay.png'),
+                'status' => data_get($basicPayment, 'bank_status') == $activeStatus ? 'active' : 'inactive',
             ],
             [
                 'method' => self::FRESHPAY,
-                'image'  => $basicPayment->freshpay_image ?? 'uploads/website-images/freshpay.png',
-                'status' => $basicPayment->freshpay_status == $activeStatus ? 'active' : 'inactive',
+                'image'  => data_get($basicPayment, 'freshpay_image', 'uploads/website-images/freshpay.png'),
+                'status' => (data_get($basicPayment, 'freshpay_status', 'inactive') == $activeStatus) ? 'active' : 'inactive',
             ],
         ];
 
