@@ -455,6 +455,10 @@ class PaymentController extends Controller {
     }
 
     public function pay_via_freshpay(Request $request) {
+        $request->merge([
+            'method' => strtolower((string) $request->method),
+        ]);
+
         $user = auth()->guard('api')->user();
         $order_id = $request->order_id ?? null;
         $order = $user?->orders()->where('order_id', $order_id)->pendingOrder()->first();
@@ -490,6 +494,12 @@ class PaymentController extends Controller {
         ]);
 
         if (! $response['ok']) {
+            info('FreshPay payment failed (api)', [
+                'message' => $response['message'] ?? null,
+                'payload' => $response['payload'] ?? null,
+                'response' => $response['response'] ?? null,
+                'http_status' => $response['http_status'] ?? null,
+            ]);
             return redirect()->route('payment-api.webview-failed-payment');
         }
 
@@ -502,7 +512,28 @@ class PaymentController extends Controller {
     }
 
     public function freshpay_callback(Request $request) {
-        info('FreshPay API callback', $request->all());
+        $service = app(FreshPayService::class);
+        $result = $service->processCallback($request);
+
+        if (! $result['ok']) {
+            info('FreshPay API callback rejected', [
+                'reason' => $result['message'] ?? null,
+                'ip' => $result['ip'] ?? $request->ip(),
+                'payload' => $request->all(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $result['message'] ?? __('Invalid callback'),
+            ], $result['http_status'] ?? 400);
+        }
+
+        info('FreshPay API callback accepted', [
+            'reference' => $result['reference'] ?? null,
+            'status' => $result['status'] ?? null,
+            'is_success' => $result['is_success'] ?? false,
+        ]);
+
         return response()->json(['status' => 'ok'], 200);
     }
     public function stripe_success(Request $request) {

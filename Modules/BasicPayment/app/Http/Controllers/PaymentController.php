@@ -195,6 +195,10 @@ class PaymentController extends Controller {
         return $this->payment_success();
     }
     public function pay_via_freshpay(Request $request) {
+        $request->merge([
+            'method' => strtolower((string) $request->method),
+        ]);
+
         $request->validate([
             'customer_number' => ['required', new RdcPhoneNumber()],
             'method' => 'required|in:airtel,orange,mpesa,africell',
@@ -222,6 +226,12 @@ class PaymentController extends Controller {
         ]);
 
         if (! $response['ok']) {
+            info('FreshPay payment failed (web)', [
+                'message' => $response['message'] ?? null,
+                'payload' => $response['payload'] ?? null,
+                'response' => $response['response'] ?? null,
+                'http_status' => $response['http_status'] ?? null,
+            ]);
             return redirect()->route('payment-failed')->with([
                 'message' => $response['message'] ?? __('Payment failed, please try again'),
                 'alert-type' => 'error',
@@ -235,7 +245,28 @@ class PaymentController extends Controller {
     }
 
     public function freshpay_callback(Request $request) {
-        info('FreshPay callback', $request->all());
+        $service = app(FreshPayService::class);
+        $result = $service->processCallback($request);
+
+        if (! $result['ok']) {
+            info('FreshPay callback rejected', [
+                'reason' => $result['message'] ?? null,
+                'ip' => $result['ip'] ?? $request->ip(),
+                'payload' => $request->all(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $result['message'] ?? __('Invalid callback'),
+            ], $result['http_status'] ?? 400);
+        }
+
+        info('FreshPay callback accepted', [
+            'reference' => $result['reference'] ?? null,
+            'status' => $result['status'] ?? null,
+            'is_success' => $result['is_success'] ?? false,
+        ]);
+
         return response()->json(['status' => 'ok'], 200);
     }
     public function pay_via_paypal() {

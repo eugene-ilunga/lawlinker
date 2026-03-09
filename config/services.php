@@ -35,6 +35,10 @@ return [
         'url' => env('FRESHPAY_API_URL', 'https://paydrc.gofreshbakery.net/api/v5/'),
         'merchant_id' => env('FRESHPAY_MERCHANT_ID'),
         'merchant_secret' => env('FRESHPAY_MERCHANT_SECRET'),
+        'callback_signature_secret' => env('FRESHPAY_CALLBACK_SIGNATURE_SECRET'),
+        'callback_aes_key' => env('FRESHPAY_CALLBACK_AES_KEY'),
+        'callback_aes_iv' => env('FRESHPAY_CALLBACK_AES_IV'),
+        'callback_whitelist' => env('FRESHPAY_CALLBACK_WHITELIST', ''),
     ],
 
 ];
