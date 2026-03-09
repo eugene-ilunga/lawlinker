@@ -17,10 +17,21 @@ class PreventXSSAttackMiddleware
     {
         if ($request->getMethod() == 'POST' || $request->getMethod() == 'PUT' || $request->getMethod() == 'PATCH') {
             $input = array_filter($request->except('_token'));
+            $skipSanitizeKeys = [
+                'freshpay_merchant_id',
+                'freshpay_merchant_secret',
+                'freshpay_callback_signature_secret',
+                'freshpay_callback_aes_key',
+                'freshpay_callback_aes_iv',
+            ];
 
             $html_event_attributes = ['onload', 'onunload', 'onclick', 'ondblclick', 'onmousedown', 'onmouseup', 'onmouseover', 'onmousemove', 'onmouseout', 'onkeypress', 'onkeydown', 'onkeyup', 'onfocus', 'onblur', 'onsubmit', 'onreset', 'onchange', 'onselect', 'oninput', 'oncontextmenu'];
 
-            array_walk_recursive($input, function (&$input) use ($html_event_attributes) {
+            array_walk_recursive($input, function (&$input, $key) use ($html_event_attributes, $skipSanitizeKeys) {
+                if (in_array((string) $key, $skipSanitizeKeys, true)) {
+                    return;
+                }
+
                 $input = strip_tags(str_replace(['&lt;', '&gt;'], '', $input), '<span><p><a><b><i><u><strong><br><hr><table><tr><th><td><ul><ol><li><h1><h2><h3><h4><h5><h6><del><ins><sup><sub><pre><address><img><figure><embed><iframe><video><style>');
 
                 foreach ($html_event_attributes as $attribute) {
