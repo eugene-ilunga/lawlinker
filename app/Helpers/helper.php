@@ -194,18 +194,20 @@ if (!function_exists('allCurrencies')) {
 
 if (!function_exists('getSessionCurrency')) {
     function getSessionCurrency(): string {
-        if (!session()->has('currency_code') || !session()->has('currency_rate') || !session()->has('currency_position')) {
+        $currency = allCurrencies()->where('currency_code', 'USD')->first();
+        if (!$currency) {
             $currency = allCurrencies()->where('is_default', 'yes')->first();
-            session()->put('currency_code', $currency->currency_code);
-            session()->forget('currency_position');
-            session()->put('currency_position', $currency->currency_position);
-            session()->forget('currency_icon');
-            session()->put('currency_icon', $currency->currency_icon);
-            session()->forget('currency_rate');
-            session()->put('currency_rate', $currency->currency_rate);
         }
 
-        return Session::get('currency_code');
+        session()->put('currency_code', $currency->currency_code);
+        session()->forget('currency_position');
+        session()->put('currency_position', $currency->currency_position);
+        session()->forget('currency_icon');
+        session()->put('currency_icon', $currency->currency_icon);
+        session()->forget('currency_rate');
+        session()->put('currency_rate', $currency->currency_rate);
+
+        return Session::get('currency_code', 'USD');
     }
 }
 

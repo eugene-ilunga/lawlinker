@@ -45,7 +45,7 @@ class PaymentController extends Controller {
         if (!in_array($method, ['paypal', 'stripe', 'mollie', 'razorpay', 'flutterwave', 'paystack', 'freshpay', 'bank'])) {
             return response()->json(['status' => 'error', 'message' => __('Method Not Found')], 404);
         }
-        $currency_code = strtoupper(request()->query('currency', 'USD'));
+        $currency_code = 'USD';
 
         if (!$this->paymentService->isCurrencySupported($method, $currency_code)) {
             $supportedCurrencies = $this->paymentService->getSupportedCurrencies($method);
@@ -61,7 +61,7 @@ class PaymentController extends Controller {
         $method = $this->paymentService::BANK_PAYMENT;
 
         $user = auth()->guard('api')->user();
-        $payable_currency = strtoupper(request()->query('currency', 'USD'));
+        $payable_currency = 'USD';
         $totalAppointment = ShoppingCart::where('user_id', $user->id)->get();
 
         if ($totalAppointment->count() == 0) {
@@ -191,7 +191,7 @@ class PaymentController extends Controller {
             return response()->json(['status' => 'error', 'message' => __('Unauthorized')], 401);
         }
 
-        $payable_currency = strtoupper(request()->query('currency', 'USD'));
+        $payable_currency = 'USD';
         $totalAppointment = ShoppingCart::where('user_id', $user->id)->get();
 
         if ($totalAppointment->count() == 0) {

@@ -28,10 +28,11 @@ trait GetGlobalInformationTrait {
      * @param $currency_code
      */
     private function getMultiCurrencyInfo($currency_code = null) {
-        if(is_null($currency_code)){
-            $currency_code = getSessionCurrency();
-        }
+        $currency_code = 'USD';
         $gateway_currency = allCurrencies()->where('currency_code', $currency_code)->first();
+        if (!$gateway_currency) {
+            $gateway_currency = allCurrencies()->where('is_default', 'yes')->first();
+        }
 
         return [
             'currency_code' => $gateway_currency->currency_code,
