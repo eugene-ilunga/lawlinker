@@ -1,0 +1,131 @@
+@extends('admin.master_layout')
+@section('title')
+    <title>{{ __('Manage Gallery') }}</title>
+@endsection
+@section('admin-content')
+    <div class="main-content">
+        <section class="section">
+            <x-admin.breadcrumb title="{{ __('Manage Gallery') }}" :list="[
+                __('Dashboard') => route('admin.dashboard'),
+                __('Service List') => route('admin.service.index'),
+                __('Edit Service') => route('admin.service.edit', ['service' => $service->id,'code' => allLanguages()->first()->code]),
+                __('Manage Gallery') => '#',
+            ]" />
+            
+            @include('service::utilities.navbar')
+
+            <div class="section-body">
+                <div class="mt-4 row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="text-center"><code>({{ __('Recommended') }}: 730X480 PX)</code></p>
+                                <form id="dropzoneForm" method="post"
+                                    action="{{ route('admin.service.gallery.update', request('id')) }}"
+                                    enctype="multipart/form-data" class="dropzone">
+                                    @csrf
+                                    @method('PUT')
+                                </form>
+                                <div class="mt-3 text-center">
+                                    <x-admin.button variant="success" class="fas fa-upload" id="submit-all" text="{{ __('Upload All') }}" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <x-admin.form-title :text="__('Gallery')" />
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ __('SN') }}</th>
+                                            <th>{{ __('Image') }}</th>
+                                            <th class="text-center">{{ __('Actions') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($gallery as $item)
+                                            <tr>
+                                                <td>{{ $loop->index + 1 }}</td>
+                                                <td>
+                                                    <img class="img-thumbnail mb-2" src="{{ asset($item->large_image) }}" alt="" height="100px" width="100px">
+                                                </td>
+                                                <td class="text-center">
+                                                    <div>
+                                                        <x-admin.delete-button :id="$item->id" onclick="deleteData" />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <x-empty-table :name="__('Gallery')" route="admin.service.index" create="no"
+                                                :message="__('No data found!')" colspan="4"/>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <x-admin.delete-modal />
+@endsection
+
+@push('css')
+    <link rel="stylesheet" href="{{ asset('backend/dropzone/dropzone.min.css') }}">
+    <style>
+        .dropzone {
+            background: white;
+            border-radius: 5px;
+            border: 2px dashed rgb(0, 135, 247);
+            border-image: none;
+            max-width: 805px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+@endpush
+@push('js')
+    <script src="{{ asset('backend/dropzone/dropzone.min.js') }}"></script>
+    <script type="text/javascript">
+        function deleteData(id) {
+            $("#deleteForm").attr("action", "{{ url('/admin/service-gallery/') }}" + "/" + id);
+        }
+        Dropzone.options.dropzoneForm = {
+            autoProcessQueue: false,
+            uploadMultiple: true,
+            parallelUploads: 10,
+            thumbnailHeight: 200,
+            thumbnailWidth: 200,
+            maxFilesize: 3,
+            filesizeBase: 1000,
+            addRemoveLinks: true,
+            renameFile: function(file) {
+                var dt = new Date();
+                var time = dt.getTime();
+                return time + file.name;
+            },
+            acceptedFiles: ".jpeg,.jpg,.png,.gif,.webp",
+            init: function() {
+                myDropzone = this;
+                $('#submit-all').on('click', function(e) {
+                    e.preventDefault();
+                    myDropzone.processQueue();
+                });
+
+                this.on("complete", function() {
+                    if (this.getQueuedFiles().length == 0 && this.getUploadingFiles().length == 0) {
+                        var _this = this;
+                        _this.removeAllFiles();
+                    }
+                });
+            },
+            success: function(file, response) {
+                window.location.href = response.url;
+                toastr.success(response.message, 'Success');
+            },
+        };
+    </script>
+@endpush

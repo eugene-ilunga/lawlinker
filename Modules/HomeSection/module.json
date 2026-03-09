@@ -1,0 +1,11 @@
+{
+    "name": "HomeSection",
+    "alias": "homesection",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\HomeSection\\app\\Providers\\SectionServiceProvider"
+    ],
+    "files": []
+}

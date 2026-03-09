@@ -1,0 +1,2 @@
+@props(['href' => url()->previous(),'text' => __('Back'),'variant'=> 'primary'])
+<a href="{{ $href }}" {{ $attributes->merge(['class' => 'btn btn-'.$variant]) }}><i class="fa fa-arrow-left"></i> {{ $text }}</a>

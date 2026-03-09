@@ -1,0 +1,498 @@
+.main-menu {
+    float: left !important;
+    direction: rtl !important;
+}
+
+.menu-area {
+    text-align: right;
+}
+
+.header-social {
+    text-align: right !important;
+    margin-right: 0;
+}
+
+.header-social ul li {
+    margin-right: 0px;
+}
+
+.header-social .social-bar li:first-child {
+    margin-right: 0px !important;
+}
+
+.header-info {
+    text-align: left !important;
+}
+
+.header-info li:before {
+    position: absolute;
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: #e9e9e9;
+    top: 0;
+    left: -17px;
+}
+
+.header-info li:last-child:before {
+    display: none;
+}
+
+.header-info li:first-child:after {
+    position: absolute;
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: #e9e9e9;
+    top: 0;
+    left: -17px;
+}
+
+.sub-menu li {
+    text-align: right;
+}
+
+ul.nav-menu li ul.sub-menu {
+    right: 0;
+    left: unset;
+}
+
+ul.nav-menu li {
+    float: right;
+}
+
+.header-info li:first-child {
+    margin-left: 30px !important;
+}
+
+.header-info li:last-child {
+    margin-left: 0px !important;
+}
+
+.header-info li i {
+    margin-right: 0px;
+    margin-left: 5px;
+}
+
+.pr_150 {
+    padding-right: 0px !important;
+    text-align: start;
+}
+
+.mission-text {
+    text-align: start;
+}
+
+.team-detail-text {
+    text-align: start !important;
+}
+
+.team-detail-text ul li:last-child {
+    margin-right: 7px !important;
+}
+
+.team-detail-text ul li:first-child {
+    margin-right: 0px !important;
+}
+
+.team-exp-area,
+.service-qucikcontact,
+.service-detail-text,
+.faq-service,
+.feature-accordion,
+.video-headline,
+.pb_50,
+.register-area {
+    text-align: start !important;
+}
+
+.testimonial-page,
+.blog-page {
+    direction: rtl;
+    text-align: right;
+}
+
+.blog-author span {
+    padding-right: 0px;
+    padding-left: 30px;
+}
+
+.blog-author span i {
+    margin-right: 0px;
+    margin-left: 3px;
+}
+
+.blog-recent-photo {
+    padding-right: 0px;
+    padding-left: 8px;
+}
+
+.comment-list .com-text span.date {
+    margin-right: 0px;
+    margin-left: 30px;
+}
+
+.comment-list .com-text span.date i {
+    margin-right: 0px;
+    margin-left: 3px;
+}
+
+.fa-chevron-right:before {
+    content: "\f053";
+}
+
+.sidebar-item ul li a i {
+    margin-right: 0px;
+    margin-left: 7px;
+}
+
+.banner-area,
+.modal-content,
+.main-footer,
+.contauct-style1 {
+    text-align: right !important;
+}
+
+.modal-header .close {
+    left: 0;
+    top: 15px;
+    position: absolute;
+}
+
+.banner-area .banner-text ul li a:after {
+    margin: 0 9px 0 5px !important;
+}
+
+.main-footer .textwidget {
+    padding-right: 0px !important;
+}
+
+.footer-recent-photo {
+    padding-right: 0px;
+    padding-left: 8px;
+}
+
+.footer-social {
+    float: left;
+}
+
+.login-area {
+    text-align: right !important;
+}
+
+.dashboard-account-info ul li {
+    text-align: right !important;
+}
+
+.dashboard-area,
+.service-widget {
+    text-align: right !important;
+}
+
+.prescription .top .right {
+    float: left;
+}
+
+.subscribe-form .btn-sub {
+    left: 4px;
+    right: auto;
+    top: 3px;
+}
+
+.subscribe-form input {
+    height: 50px;
+    padding-left: 20px;
+    width: 100%;
+    border: none;
+    padding-right: 20px;
+    text-align: right;
+}
+
+.scroll-top {
+    bottom: 20px !important;
+    right: auto !important;
+    left: 20px !important;
+}
+
+.footer-item .title:after {
+    left: auto;
+    right: 0;
+}
+
+.footer-post-date:before,
+.blog-post-date:before {
+    left: auto;
+    right: 0;
+    top: 0;
+}
+
+.footer-post-date,
+.blog-post-date {
+    padding-right: 17px !important;
+}
+
+.select2-container,
+.first-blog .blog-text {
+    text-align: right;
+}
+
+.faq-header button.faq-button {
+    text-align: right !important;
+    padding-right: 15px !important;
+}
+
+.faq-header button.faq-button:before {
+    right: auto !important;
+    top: 0px !important;
+    left: 0 !important;
+}
+
+.owl-carousel.owl-rtl .owl-item,
+.team-text {
+    text-align: right !important;
+}
+
+.testi-info img {
+    left: auto !important;
+    right: 0 !important;
+}
+
+.testi-info h3,
+.testi-info span {
+    margin-right: 100px !important;
+}
+
+.owl-testimonial .owl-dots {
+    right: auto !important;
+    left: 15% !important;
+}
+
+.testimonial-item:before {
+    left: auto;
+    right: 70px;
+}
+
+.footer-address ul li i {
+    left: auto;
+    right: 0;
+}
+
+.footer-address ul li p,
+.footer-address ul li .title {
+    margin-right: 50px !important;
+}
+
+.service-widget-contact ul li i {
+    margin-right: 0px !important;
+    margin-left: 4px !important;
+}
+
+.testimonial-page .testimonial-item:before {
+    left: auto;
+    right: 30px;
+}
+
+.detail-dashboard .d-headline:after {
+    right: 11px;
+    left: auto;
+}
+
+.detail-dashboard .d-headline:before {
+    right: 0;
+    left: auto;
+}
+
+.table thead th,
+.table tbody td {
+    text-align: right !important;
+}
+
+.copyright-text p {
+    padding-right: 0;
+}
+
+.wh-table .sch {
+    margin-left: 5px;
+    float: right;
+}
+
+.mobile-menuicon .menu-bar {
+    text-align: left;
+    right: auto;
+    left: 15px;
+}
+
+.mobile-menu .sidenav {
+    left: auto !important;
+    right: 0 !important;
+    text-align: right !important;
+}
+
+.mobile-menu .sidenav .closebtn {
+    right: auto !important;
+    left: -25px !important;
+}
+
+.mobile-menu .sidenav ul li.menu-child>span:before {
+    right: auto !important;
+    left: 0 !important;
+}
+
+.mobile-menu .sidenav ul li.menu-child:hover>span:before {
+    right: auto !important;
+    left: 0 !important;
+}
+
+.testi-info {
+    padding: 15px 0px 21px 0px !important;
+}
+
+.prescription .main-section .medicine {
+    border-right: 2px solid #afafaf;
+    border-left: none;
+    padding-right: 30px;
+    padding-left: 0px;
+    margin-right: 30px;
+    margin-left: 0px;
+}
+
+.prescription .main-section .medicine .list {
+    padding-right: 20px;
+    padding-left: 0px;
+}
+
+.prescription .main-section .medicine .list .l {
+    float: right;
+}
+
+.prescription .main-section .medicine .list .r {
+    float: left;
+}
+
+.contact-info-item.bg2 {
+    text-align: right;
+}
+
+.header-area .nice-select .option {
+    text-align: right;
+    margin-left: 0 !important;
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+    text-align: right;
+    padding-right: 15px !important;
+}
+
+.login_area_bg .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    margin-left: 0;
+    margin-top: -6px;
+}
+
+span.shopping-cart {
+    right: auto;
+    left: -15px;
+}
+
+.footer-address ul li:last-child {
+    padding: 0px 0px 0px 0px;
+}
+
+.footer-address {
+    border-right: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-address-first {
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+    margin-left: 0px;
+}
+
+.feature-section-text {
+    padding-right: 30px;
+    padding-left: 60px;
+}
+
+.testimonial_slider .slick-dots {
+    padding-left: 45px;
+    margin-bottom: 15px;
+}
+
+.modal-header .btn-close {
+    position: absolute;
+    left: 20px;
+}
+
+@media only screen and (max-width:991px) {
+    .ui-datepicker {
+        position: fixed;
+        top: 4.719px;
+        left: 0px !important;
+        z-index: 1051;
+        display: block;
+    }
+
+    .header-social {
+        text-align: center !important;
+    }
+
+    .header-social li {
+        margin-right: 15px !important;
+    }
+
+    .header-info li:first-child {
+        margin-left: 0 !important;
+    }
+
+    .header-social li:last-child {
+        margin-right: 15px !important;
+    }
+
+    .header-social li:first-child {
+        margin-right: -15px !important;
+    }
+
+    .header-social li:first-child {
+        margin-right: 0 !important;
+    }
+
+    .header-social li:before,
+    li:after {
+        display: none !important;
+    }
+
+    .header-info {
+        text-align: center !important;
+    }
+
+    .header-info li {
+        padding-top: 6px;
+    }
+
+    .header-info li:before {
+        display: none !important;
+    }
+}
+
+.team_slider_area .nextArrow {
+    left: 0;
+    right: auto;
+    transform: translateY(-50%) scale(1) !important;
+}
+
+.team_slider_area .prevArrow {
+    right: 0;
+    left: auto;
+    transform: translateY(-50%) rotateY(180deg) scale(1) !important;
+    -webkit-transform: translateY(-50%) rotateY(180deg) scale(1) !important;
+    -moz-transform: translateY(-50%) rotateY(180deg) scale(1) !important;
+    -ms-transform: translateY(-50%) rotateY(180deg) scale(1) !important;
+    -o-transform: translateY(-50%) rotateY(180deg) scale(1) !important;
+}
+
+.blog-recent-text {
+    padding-left: 0;
+    padding-right: 5px;
+}

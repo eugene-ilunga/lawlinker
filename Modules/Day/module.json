@@ -1,0 +1,11 @@
+{
+    "name": "Day",
+    "alias": "day",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Day\\app\\Providers\\DayServiceProvider"
+    ],
+    "files": []
+}
