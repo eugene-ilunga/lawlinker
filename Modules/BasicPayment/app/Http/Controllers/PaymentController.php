@@ -52,7 +52,7 @@ class PaymentController extends Controller {
         if (!in_array($method, $activeGateways)) {
             return response()->json(['status' => false, 'message' => __('The selected payment method is now inactive.')]);
         }
-        if (!$this->paymentService->isCurrencySupported($method)) {
+        if (!$this->paymentService->isCurrencySupported($method, 'USD')) {
             $supportedCurrencies = $this->paymentService->getSupportedCurrencies($method);
             return response()->json(['status' => false, 'message' => __('You are trying to use unsupported currency'), 'supportCurrency' => sprintf(
                 '%s %s: %s',
@@ -64,7 +64,7 @@ class PaymentController extends Controller {
 
         try {
             $payable_amount = Session::get('payable_amount');
-            $calculatePayableCharge = $this->paymentService->getPayableAmount($method, $payable_amount);
+            $calculatePayableCharge = $this->paymentService->getPayableAmount($method, $payable_amount, 'USD');
 
             DB::beginTransaction();
 

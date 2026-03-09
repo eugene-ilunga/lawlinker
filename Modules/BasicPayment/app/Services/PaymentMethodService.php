@@ -180,7 +180,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => $basicPayment->stripe_image ? asset($basicPayment->stripe_image) : asset('uploads/website-images/stripe.png'),
             self::PAYPAL => $basicPayment->paypal_image ? asset($basicPayment->paypal_image) : asset('uploads/website-images/paypal.png'),
             self::BANK_PAYMENT => $basicPayment->bank_image ? asset($basicPayment->bank_image) : asset('uploads/website-images/bank-pay.png'),
-            self::FRESHPAY => ($basicPayment->freshpay_image ?? null) ? asset($basicPayment->freshpay_image) : asset('uploads/website-images/freshpay.png'),
+            self::FRESHPAY => ($basicPayment->freshpay_image ?? null) ? asset($basicPayment->freshpay_image) : asset('uploads/website-images/bank-pay.png'),
             default => null,
         };
     }
@@ -217,7 +217,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             ],
             self::FRESHPAY => [
                 'name' => 'FreshPay',
-                'logo' => asset(data_get($basicPayment, 'freshpay_image', 'uploads/website-images/freshpay.png')),
+                'logo' => asset(data_get($basicPayment, 'freshpay_image', 'uploads/website-images/bank-pay.png')),
                 'status' => data_get($basicPayment, 'freshpay_status', 'inactive') == $activeStatus,
             ],
         ];
@@ -244,7 +244,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => BasicPaymentSupportedCurrencyListEnum::isStripeSupportedCurrencies($code),
             self::PAYPAL => BasicPaymentSupportedCurrencyListEnum::isPaypalSupportedCurrencies($code),
             self::BANK_PAYMENT => str($code)->lower() == str(MultiCurrency::where('is_default', 'yes')->first()->currency_code)->lower(),
-            self::FRESHPAY => str($code)->lower() === 'usd',
+            self::FRESHPAY => strtolower(trim((string) $code)) === 'usd',
             default => false,
         };
     }
@@ -355,7 +355,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             ],
             [
                 'method' => self::FRESHPAY,
-                'image'  => data_get($basicPayment, 'freshpay_image', 'uploads/website-images/freshpay.png'),
+                'image'  => data_get($basicPayment, 'freshpay_image', 'uploads/website-images/bank-pay.png'),
                 'status' => (data_get($basicPayment, 'freshpay_status', 'inactive') == $activeStatus) ? 'active' : 'inactive',
             ],
         ];
