@@ -20,6 +20,9 @@ use Modules\Lawyer\app\Models\Lawyer;
 use Modules\Order\app\Models\Order;
 use Razorpay\Api\Api;
 use App\Http\Requests\BankInformationRequest;
+use App\Rules\RdcPhoneNumber;
+use App\Services\FreshPayService;
+use App\Services\RdcPhoneFormatter;
 
 class PaymentController extends Controller {
     use GetGlobalInformationTrait, GlobalMailTrait;
@@ -190,6 +193,50 @@ class PaymentController extends Controller {
         Session::put('payment_details', $bankDetails);
 
         return $this->payment_success();
+    }
+    public function pay_via_freshpay(Request $request) {
+        $request->validate([
+            'customer_number' => ['required', new RdcPhoneNumber()],
+            'method' => 'required|in:airtel,orange,mpesa,africell',
+        ], [
+            'method.required' => __('Operator is required'),
+            'method.in' => __('Please select a valid operator'),
+        ]);
+
+        $order = session()->get('order');
+        if (! $order) {
+            return redirect()->route('payment-failed');
+        }
+
+        $service = app(FreshPayService::class);
+        $reference = $service->generateReference('LPD');
+        $customerNumber = RdcPhoneFormatter::normalizeForFreshPay($request->customer_number);
+
+        $response = $service->debit([
+            'amount' => session()->get('paid_amount', $order->paid_amount),
+            'currency' => 'USD',
+            'customer_number' => $customerNumber,
+            'reference' => $reference,
+            'method' => $request->method,
+            'callback_url' => route('freshpay-callback'),
+        ]);
+
+        if (! $response['ok']) {
+            return redirect()->route('payment-failed')->with([
+                'message' => $response['message'] ?? __('Payment failed, please try again'),
+                'alert-type' => 'error',
+            ]);
+        }
+
+        Session::put('after_success_transaction', $reference);
+        Session::put('payment_details', $response['response'] ?? []);
+
+        return $this->payment_success();
+    }
+
+    public function freshpay_callback(Request $request) {
+        info('FreshPay callback', $request->all());
+        return response()->json(['status' => 'ok'], 200);
     }
     public function pay_via_paypal() {
         $basic_payment = $this->get_basic_payment_info();

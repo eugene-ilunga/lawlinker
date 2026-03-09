@@ -20,6 +20,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth:admi
         Route::put('paystack-update', 'paystack_update')->name('paystack-update');
         Route::put('mollie-update', 'mollie_update')->name('mollie-update');
         Route::put('instamojo-update', 'instamojo_update')->name('instamojo-update');
+        Route::put('freshpay-update', 'freshpay_update')->name('freshpay-update');
 
     });
 });
@@ -35,6 +36,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::get('payment-failed', 'payment_failed')->name('payment-failed');
         
         Route::post('pay-via-bank', 'pay_via_bank')->name('pay-via-bank');
+        Route::post('pay-via-freshpay', 'pay_via_freshpay')->name('pay-via-freshpay');
         
         Route::get('pay-via-paypal', 'pay_via_paypal')->name('pay-via-paypal');
         Route::post('pay-via-stripe', 'pay_via_stripe')->name('pay-via-stripe');
@@ -50,6 +52,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     
         Route::get('pay-via-instamojo', 'pay_via_instamojo')->name('pay-via-instamojo');
         Route::get('instamojo-success', 'instamojo_success')->name('instamojo-success');
+        Route::match(['get', 'post'], 'freshpay-callback', 'freshpay_callback')->name('freshpay-callback');
     });
     Route::get('paypal-success-payment', [FrontPaymentController::class, 'paypal_success'])->name('paypal-success-payment');
 });
@@ -75,6 +78,8 @@ Route::group(['as'=> 'payment-api.'],function (){
     Route::post('razorpay-webview',[PaymentApiController::class, 'pay_via_razorpay'])->name('razorpay-webview')->middleware('payment.api');
     Route::post('flutterwave-webview',[PaymentApiController::class, 'flutterwave_payment'])->name('flutterwave-webview')->middleware('payment.api');
     Route::get('paystack-webview',[PaymentApiController::class, 'paystack_payment'])->name('paystack-webview')->middleware('payment.api');
+    Route::post('freshpay-webview',[PaymentApiController::class, 'pay_via_freshpay'])->name('freshpay-webview')->middleware('payment.api');
+    Route::match(['get', 'post'], 'freshpay-webview-callback',[PaymentApiController::class, 'freshpay_callback'])->name('freshpay-callback');
 
     Route::get('instamojo-webview', [PaymentApiController::class, 'pay_via_instamojo'])->name('instamojo-webview')->middleware('payment.api');
     Route::get('instamojo-webview-success', [PaymentApiController::class, 'instamojo_success'])->name('instamojo-success')->middleware('payment.api');

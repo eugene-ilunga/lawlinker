@@ -30,3 +30,7 @@
     <a class="nav-link" id="Instamojo-tab" data-bs-toggle="tab" href="#instamojo_tab" role="tab"
         aria-controls="Instamojo" aria-selected="false">{{ __('Instamojo') }}</a>
 </li>
+<li class="nav-item">
+    <a class="nav-link" id="freshpay-tab" data-bs-toggle="tab" href="#freshpay_tab" role="tab"
+        aria-controls="freshpay" aria-selected="false">{{ __('FreshPay') }}</a>
+</li>

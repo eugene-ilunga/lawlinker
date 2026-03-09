@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'freshpay' => [
+        'url' => env('FRESHPAY_API_URL', 'https://paydrc.gofreshbakery.net/api/v5/'),
+        'merchant_id' => env('FRESHPAY_MERCHANT_ID'),
+        'merchant_secret' => env('FRESHPAY_MERCHANT_SECRET'),
+    ],
+
 ];

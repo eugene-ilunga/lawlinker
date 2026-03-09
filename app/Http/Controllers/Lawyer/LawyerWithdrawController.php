@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Lawyer;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Rules\RdcPhoneNumber;
+use App\Services\RdcPhoneFormatter;
 use Modules\Appointment\app\Models\Appointment;
 use Modules\PaymentWithdraw\app\Models\WithdrawMethod;
 use Modules\PaymentWithdraw\app\Models\WithdrawRequest;
@@ -87,6 +89,18 @@ class LawyerWithdrawController extends Controller {
         }
 
         $method = WithdrawMethod::whereId($request?->withdraw_method_id)->first();
+
+        if ($method && strtolower($method->name) === 'freshpay') {
+            $request->validate([
+                'freshpay_operator' => 'required|in:airtel,orange,mpesa,africell',
+                'freshpay_number' => ['required', new RdcPhoneNumber()],
+            ], [
+                'freshpay_operator.required' => __('FreshPay operator is required'),
+                'freshpay_operator.in' => __('Please select a valid FreshPay operator'),
+                'freshpay_number.required' => __('FreshPay number is required'),
+            ]);
+        }
+
         if ($request->amount >= $method->min_amount && $request->amount <= $method->max_amount) {
             $widthdraw = new WithdrawRequest();
             $widthdraw->lawyer_id = $lawyer?->id;
@@ -97,7 +111,11 @@ class LawyerWithdrawController extends Controller {
             $withdraw_amount = ($method?->withdraw_charge / 100) * $withdraw_request;
             $widthdraw->withdraw_amount = $request?->amount - $withdraw_amount;
             $widthdraw->withdraw_charge = $method?->withdraw_charge;
-            $widthdraw->account_info = $request?->account_info;
+            if (strtolower($method->name) === 'freshpay') {
+                $widthdraw->account_info = "FreshPay Operator: ".$request->freshpay_operator."\nFreshPay Number: ".RdcPhoneFormatter::normalizeForFreshPay($request->freshpay_number);
+            } else {
+                $widthdraw->account_info = $request?->account_info;
+            }
             $widthdraw->save();
 
             $notification = ['message' => __('Withdraw request sent successfully, please wait for admin approval'), 'alert-type' => 'success'];

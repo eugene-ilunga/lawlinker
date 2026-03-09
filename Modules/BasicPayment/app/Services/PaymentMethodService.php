@@ -16,12 +16,14 @@ class PaymentMethodService implements PaymentMethodInterface {
     const PAYPAL = 'paypal';
 
     const BANK_PAYMENT = 'bank';
+    const FRESHPAY = 'freshpay';
 
     // Holds the supported payment gateways
     protected static array $supportedPayments = [
         self::STRIPE,
         self::PAYPAL,
         self::BANK_PAYMENT,
+        self::FRESHPAY,
     ];
 
     /**
@@ -38,6 +40,7 @@ class PaymentMethodService implements PaymentMethodInterface {
         self::STRIPE,
         self::PAYPAL,
         self::BANK_PAYMENT,
+        self::FRESHPAY,
     ];
 
     /**
@@ -87,6 +90,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => 'Stripe',
             self::PAYPAL => 'PayPal',
             self::BANK_PAYMENT => 'Bank Payment',
+            self::FRESHPAY => 'FreshPay',
             default => null,
         };
     }
@@ -122,6 +126,15 @@ class PaymentMethodService implements PaymentMethodInterface {
                 'charge'           => $basicPayment->bank_charge ?? null,
                 'currency_id'      => $basicPayment->bank_currency_id ?? null,
             ],
+            self::FRESHPAY => (object) [
+                'freshpay_status' => $basicPayment->freshpay_status ?? null,
+                'freshpay_image' => $basicPayment->freshpay_image ?? null,
+                'charge' => $basicPayment->freshpay_charge ?? null,
+                'currency_id' => $basicPayment->freshpay_currency_id ?? null,
+                'freshpay_api_url' => $basicPayment->freshpay_api_url ?? null,
+                'freshpay_merchant_id' => $basicPayment->freshpay_merchant_id ?? null,
+                'freshpay_merchant_secret' => $basicPayment->freshpay_merchant_secret ?? null,
+            ],
             default => (object) false,
         };
     }
@@ -137,6 +150,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => $gatewayDetails->stripe_status == $activeStatus,
             self::PAYPAL => $gatewayDetails->paypal_status == $activeStatus,
             self::BANK_PAYMENT => $gatewayDetails->bank_status == $activeStatus,
+            self::FRESHPAY => $gatewayDetails->freshpay_status == $activeStatus,
             default => false,
         };
     }
@@ -149,6 +163,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => 'fa-cc-stripe',
             self::PAYPAL => 'fa-cc-paypal',
             self::BANK_PAYMENT => 'fa-credit-card',
+            self::FRESHPAY => 'fa-wallet',
             default => null,
         };
     }
@@ -165,6 +180,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => $basicPayment->stripe_image ? asset($basicPayment->stripe_image) : asset('uploads/website-images/stripe.png'),
             self::PAYPAL => $basicPayment->paypal_image ? asset($basicPayment->paypal_image) : asset('uploads/website-images/paypal.png'),
             self::BANK_PAYMENT => $basicPayment->bank_image ? asset($basicPayment->bank_image) : asset('uploads/website-images/bank-pay.png'),
+            self::FRESHPAY => $basicPayment->freshpay_image ? asset($basicPayment->freshpay_image) : asset('uploads/website-images/freshpay.png'),
             default => null,
         };
     }
@@ -199,6 +215,11 @@ class PaymentMethodService implements PaymentMethodInterface {
                 'logo'   => asset($basicPayment->bank_image ?? 'uploads/website-images/bank-pay.png'),
                 'status' => $basicPayment->bank_status == $activeStatus,
             ],
+            self::FRESHPAY => [
+                'name' => 'FreshPay',
+                'logo' => asset($basicPayment->freshpay_image ?? 'uploads/website-images/freshpay.png'),
+                'status' => $basicPayment->freshpay_status == $activeStatus,
+            ],
         ];
 
         // Merge base gateways with additional gateways
@@ -223,6 +244,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => BasicPaymentSupportedCurrencyListEnum::isStripeSupportedCurrencies($code),
             self::PAYPAL => BasicPaymentSupportedCurrencyListEnum::isPaypalSupportedCurrencies($code),
             self::BANK_PAYMENT => str($code)->lower() == str(MultiCurrency::where('is_default', 'yes')->first()->currency_code)->lower(),
+            self::FRESHPAY => str($code)->lower() === 'usd',
             default => false,
         };
     }
@@ -237,6 +259,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => BasicPaymentSupportedCurrencyListEnum::getStripeSupportedCurrencies(),
             self::PAYPAL => BasicPaymentSupportedCurrencyListEnum::getPaypalSupportedCurrencies(),
             self::BANK_PAYMENT => MultiCurrency::where('is_default', 'yes')->pluck('currency_code')->toArray(),
+            self::FRESHPAY => ['USD'],
             default => [],
         };
     }
@@ -249,6 +272,7 @@ class PaymentMethodService implements PaymentMethodInterface {
             self::STRIPE => 'basicpayment::gateway-actions.stripe',
             self::PAYPAL => 'basicpayment::gateway-actions.paypal',
             self::BANK_PAYMENT => 'basicpayment::gateway-actions.bank',
+            self::FRESHPAY => 'basicpayment::gateway-actions.freshpay',
             default => null,
         };
     }
@@ -328,6 +352,11 @@ class PaymentMethodService implements PaymentMethodInterface {
                 'method' => self::BANK_PAYMENT,
                 'image'  => $basicPayment->bank_image ?? 'uploads/website-images/bank-pay.png',
                 'status' => $basicPayment->bank_status == $activeStatus ? 'active' : 'inactive',
+            ],
+            [
+                'method' => self::FRESHPAY,
+                'image'  => $basicPayment->freshpay_image ?? 'uploads/website-images/freshpay.png',
+                'status' => $basicPayment->freshpay_status == $activeStatus ? 'active' : 'inactive',
             ],
         ];
 

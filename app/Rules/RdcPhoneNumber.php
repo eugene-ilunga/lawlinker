@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Rules;
+
+use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
+
+class RdcPhoneNumber implements ValidationRule
+{
+    /**
+     * Accepts RDC mobile numbers in 9 digits (899730021)
+     * or local 10 digits prefixed with 0 (0899730021).
+     */
+    public function validate(string $attribute, mixed $value, Closure $fail): void
+    {
+        if (! is_string($value) || ! preg_match('/^0?8\d{8}$/', $value)) {
+            $fail(__('Please provide a valid RDC phone number.'));
+        }
+    }
+}

@@ -90,6 +90,22 @@
                                                 placeholder="{{ __('Enter Withdraw Amount') }}" value="{{ old('amount') }}"
                                                 required="true" autocomplete="off" />
                                         </div>
+                                        <div class="form-group d-none" id="freshpay_operator_group">
+                                            <label for="freshpay_operator">{{ __('FreshPay Operator') }}</label>
+                                            <select name="freshpay_operator" id="freshpay_operator" class="form-control">
+                                                <option value="">{{ __('Select Operator') }}</option>
+                                                <option value="airtel" {{ old('freshpay_operator') == 'airtel' ? 'selected' : '' }}>Airtel</option>
+                                                <option value="orange" {{ old('freshpay_operator') == 'orange' ? 'selected' : '' }}>Orange</option>
+                                                <option value="mpesa" {{ old('freshpay_operator') == 'mpesa' ? 'selected' : '' }}>Mpesa</option>
+                                                <option value="africell" {{ old('freshpay_operator') == 'africell' ? 'selected' : '' }}>Africell</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group d-none" id="freshpay_number_group">
+                                            <x-admin.form-input id="freshpay_number" name="freshpay_number" type="text"
+                                                label="{{ __('FreshPay Number') }}"
+                                                placeholder="{{ __('899730021 / 0899730021') }}"
+                                                value="{{ old('freshpay_number') }}" autocomplete="off" />
+                                        </div>
                                         <div class="form-group">
                                             <x-admin.form-editor id="account_info" name="account_info" label="{{ __('Account Info') }}" value="{!! old('account_info') !!}" required="true"/>
                                         </div>
@@ -116,10 +132,18 @@
         (function($) {
     "use strict";
     $(document).ready(function() {
+        function toggleFreshPayFields() {
+            var selectedText = $("#withdraw_method_id option:selected").text().trim().toLowerCase();
+            var isFreshPay = selectedText === 'freshpay';
+            $('#freshpay_operator_group, #freshpay_number_group').toggleClass('d-none', !isFreshPay);
+            $('#freshpay_operator, #freshpay_number').prop('required', isFreshPay);
+        }
+
         $("#withdraw_method_id").on('change', function() {
             var methodId = $(this).val();
             var submitBtn = $('#submitBtn');
             submitBtn.attr('disabled', true);
+            toggleFreshPayFields();
             if (!methodId) {
                 $("#method_des_box").addClass('d-none');
                 submitBtn.attr('disabled', false);
@@ -136,6 +160,8 @@
                 complete: function() {submitBtn.attr('disabled', false)}
             });
         });
+
+        toggleFreshPayFields();
     });
 })(jQuery);
 

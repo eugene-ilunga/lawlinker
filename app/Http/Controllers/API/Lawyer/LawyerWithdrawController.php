@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API\Lawyer;
 
 use App\Http\Resources\WithdrawListResource;
+use App\Rules\RdcPhoneNumber;
+use App\Services\RdcPhoneFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
@@ -108,6 +110,20 @@ class LawyerWithdrawController extends Controller {
         }
 
         $method = WithdrawMethod::whereId($request?->withdraw_method_id)->first();
+        if ($method && strtolower($method->name) === 'freshpay') {
+            $freshPayValidator = Validator::make($request->all(), [
+                'freshpay_operator' => 'required|in:airtel,orange,mpesa,africell',
+                'freshpay_number' => ['required', new RdcPhoneNumber()],
+            ], [
+                'freshpay_operator.required' => __('FreshPay operator is required'),
+                'freshpay_operator.in' => __('Please select a valid FreshPay operator'),
+                'freshpay_number.required' => __('FreshPay number is required'),
+            ]);
+            if ($freshPayValidator->fails()) {
+                return response()->json(['status' => 'failed', 'message' => $freshPayValidator->errors()], 422);
+            }
+        }
+
         if ($request->amount >= $method->min_amount && $request->amount <= $method->max_amount) {
             $withdraw = new WithdrawRequest();
             $withdraw->lawyer_id = $lawyer?->id;
@@ -118,7 +134,11 @@ class LawyerWithdrawController extends Controller {
             $withdraw_amount = ($method?->withdraw_charge / 100) * $withdraw_request;
             $withdraw->withdraw_amount = $request?->amount - $withdraw_amount;
             $withdraw->withdraw_charge = $method?->withdraw_charge;
-            $withdraw->account_info = $request?->account_info;
+            if (strtolower($method->name) === 'freshpay') {
+                $withdraw->account_info = "FreshPay Operator: ".$request->freshpay_operator."\nFreshPay Number: ".RdcPhoneFormatter::normalizeForFreshPay($request->freshpay_number);
+            } else {
+                $withdraw->account_info = $request?->account_info;
+            }
             $withdraw->save();
 
             return response()->json([

@@ -275,16 +275,56 @@ class BasicPaymentController extends Controller {
         return redirect()->back()->with($notification);
     }
 
+    public function freshpay_update(Request $request) {
+        checkAdminHasPermissionAndThrowException('basic.payment.update');
+        $rules = [
+            'freshpay_api_url' => 'required|url',
+            'freshpay_merchant_id' => 'required|string|max:190',
+            'freshpay_merchant_secret' => 'required|string|max:190',
+            'freshpay_charge' => 'required|numeric|max:100',
+            'freshpay_status' => 'required|in:inactive,active',
+        ];
+        $customMessages = [
+            'freshpay_api_url.required' => __('API URL is required'),
+            'freshpay_api_url.url' => __('API URL must be valid'),
+            'freshpay_merchant_id.required' => __('Merchant ID is required'),
+            'freshpay_merchant_secret.required' => __('Merchant secret is required'),
+            'freshpay_charge.required' => __('Gateway charge is required'),
+            'freshpay_charge.numeric' => __('Gateway charge should be numeric'),
+        ];
+
+        $request->validate($rules, $customMessages);
+
+        $this->updateColumns($request->only(
+            'freshpay_api_url',
+            'freshpay_merchant_id',
+            'freshpay_merchant_secret',
+            'freshpay_charge',
+            'freshpay_status'
+        ));
+
+        if ($request->file('freshpay_image')) {
+            $this->updateImage($request->freshpay_image, 'freshpay_image');
+        }
+
+        Cache::forget('basic_payment');
+
+        $notification = __('Update Successfully');
+        $notification = ['message' => $notification, 'alert-type' => 'success'];
+
+        return redirect()->back()->with($notification);
+    }
+
     private function updateColumns($request) {
         foreach ($request as $key => $value) {
-            BasicPayment::where('key', $key)->update(['value' => $value]);
+            BasicPayment::updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
         Cache::forget('basic_payment');
     }
 
     private function updateImage(UploadedFile $image, string $fieldName) {
-        $bank_setting = BasicPayment::where('key', $fieldName)->first();
+        $bank_setting = BasicPayment::firstOrCreate(['key' => $fieldName], ['value' => '']);
         $basicImage = $bank_setting ? $bank_setting?->value : null;
         if ($file_name = file_upload($image, 'uploads/custom-images/', $basicImage)) {
             $bank_setting->value = $file_name;

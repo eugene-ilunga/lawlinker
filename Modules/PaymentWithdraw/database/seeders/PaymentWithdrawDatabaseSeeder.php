@@ -27,6 +27,14 @@ class PaymentWithdrawDatabaseSeeder extends Seeder {
                 'withdraw_charge' => 5.00,
                 'description'     => '<p>Your Name <br> Your paypal email address <br> Your phone number</p>',
             ],
+            [
+                'id'              => 3,
+                'name'            => 'FreshPay',
+                'min_amount'      => 1.00,
+                'max_amount'      => 500.00,
+                'withdraw_charge' => 2.00,
+                'description'     => '<p>Operator: airtel/orange/mpesa/africell <br> Number: 899730021 or 0899730021</p>',
+            ],
         ];
 
         foreach ($withdrawMethods as $method) {

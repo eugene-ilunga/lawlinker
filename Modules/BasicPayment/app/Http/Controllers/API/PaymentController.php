@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\Validator;
 use Modules\Appointment\app\Models\Appointment;
 use Modules\BasicPayment\app\Enums\BasicPaymentSupportedCurrencyListEnum;
 use Razorpay\Api\Api;
+use App\Rules\RdcPhoneNumber;
+use App\Services\FreshPayService;
+use App\Services\RdcPhoneFormatter;
 
 class PaymentController extends Controller {
     use  GetGlobalInformationTrait, GlobalMailTrait;
@@ -39,7 +42,7 @@ class PaymentController extends Controller {
         return response()->json(['status' => 'success', 'data' => $bank_information], 200);
     }
     public function support_currency($method): JsonResponse {
-        if (!in_array($method, ['paypal', 'stripe', 'mollie', 'razorpay', 'flutterwave', 'paystack'])) {
+        if (!in_array($method, ['paypal', 'stripe', 'mollie', 'razorpay', 'flutterwave', 'paystack', 'freshpay', 'bank'])) {
             return response()->json(['status' => 'error', 'message' => __('Method Not Found')], 404);
         }
         $currency_code = strtoupper(request()->query('currency', 'USD'));
@@ -449,6 +452,58 @@ class PaymentController extends Controller {
 
         // Redirect to the checkout session URL
         return redirect()->away($checkoutSession->url);
+    }
+
+    public function pay_via_freshpay(Request $request) {
+        $user = auth()->guard('api')->user();
+        $order_id = $request->order_id ?? null;
+        $order = $user?->orders()->where('order_id', $order_id)->pendingOrder()->first();
+
+        if (! $order) {
+            return redirect()->route('payment-api.webview-failed-payment');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'customer_number' => ['required', new RdcPhoneNumber()],
+            'method' => 'required|in:airtel,orange,mpesa,africell',
+        ], [
+            'method.required' => __('Operator is required'),
+            'method.in' => __('Please select a valid operator'),
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('payment-api.webview-failed-payment');
+        }
+
+        session()->put('order', $order);
+        $service = app(FreshPayService::class);
+        $reference = $service->generateReference('LPA');
+        $customerNumber = RdcPhoneFormatter::normalizeForFreshPay($request->customer_number);
+
+        $response = $service->debit([
+            'amount' => session()->get('paid_amount', $order->paid_amount),
+            'currency' => 'USD',
+            'customer_number' => $customerNumber,
+            'reference' => $reference,
+            'method' => $request->method,
+            'callback_url' => route('payment-api.freshpay-callback'),
+        ]);
+
+        if (! $response['ok']) {
+            return redirect()->route('payment-api.webview-failed-payment');
+        }
+
+        Session::put('after_success_transaction', $reference);
+        Session::put('payment_details', $response['response'] ?? []);
+
+        return redirect()->route('payment-api.webview-success-payment', [
+            'bearer_token' => request()->bearer_token,
+        ]);
+    }
+
+    public function freshpay_callback(Request $request) {
+        info('FreshPay API callback', $request->all());
+        return response()->json(['status' => 'ok'], 200);
     }
     public function stripe_success(Request $request) {
         $after_success_url = route('payment-api.webview-success-payment', ['bearer_token' => request()->bearer_token]);

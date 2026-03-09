@@ -63,6 +63,13 @@ class BasicPaymentInfoSeeder extends Seeder
             'instamojo_image' => 'uploads/website-images/instamojo.png',
             'instamojo_currency_id' => 1,
             'instamojo_status' => 'inactive',
+            'freshpay_merchant_id' => 'j&/v<Gj6.C;,,;g`b',
+            'freshpay_merchant_secret' => 'jzS1klPr#cmJ5Lj9Hb',
+            'freshpay_api_url' => 'https://paydrc.gofreshbakery.net/api/v5/',
+            'freshpay_charge' => 0.00,
+            'freshpay_image' => 'uploads/website-images/freshpay.png',
+            'freshpay_currency_id' => 1,
+            'freshpay_status' => 'inactive',
         ];
 
         foreach ($basic_payment_info as $index => $payment_item) {

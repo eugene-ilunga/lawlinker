@@ -34,6 +34,7 @@
                                     @include('basicpayment::sections.paystack')
                                     @include('basicpayment::sections.mollie')
                                     @include('basicpayment::sections.instamojo')
+                                    @include('basicpayment::sections.freshpay')
                                 </div>
                             </div>
                         </div>
@@ -117,6 +118,16 @@
             input_field: "#image-upload-instamojo",
             preview_box: "#image-preview-instamojo",
             label_field: "#image-label-instamojo",
+            label_default: "{{ __('Choose Image') }}",
+            label_selected: "{{ __('Change Image') }}",
+            no_label: false,
+            success_callback: null
+        });
+
+        $.uploadPreview({
+            input_field: "#image-upload-freshpay",
+            preview_box: "#image-preview-freshpay",
+            label_field: "#image-label-freshpay",
             label_default: "{{ __('Choose Image') }}",
             label_selected: "{{ __('Change Image') }}",
             no_label: false,
