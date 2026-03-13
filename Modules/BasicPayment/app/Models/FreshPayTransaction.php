@@ -11,6 +11,8 @@ class FreshPayTransaction extends Model
 {
     use HasFactory;
 
+    protected $table = 'freshpay_transactions';
+
     protected $fillable = [
         'order_db_id',
         'order_public_id',
