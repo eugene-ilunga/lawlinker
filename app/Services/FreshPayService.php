@@ -94,6 +94,8 @@ class FreshPayService
             'callback_url' => $input['callback_url'],
         ];
 
+        $payload['e-mail'] = $payload['email'];
+
         if (! empty($settings->freshpay_callback_aes_key)) {
             $payload['encryption_key'] = $settings->freshpay_callback_aes_key;
         }

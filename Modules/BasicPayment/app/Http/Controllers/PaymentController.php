@@ -297,7 +297,10 @@ class PaymentController extends Controller {
 
         app(FreshPayTransactionService::class)->updateFromCallback($result);
 
-        return response()->json(['status' => 'ok'], 200);
+        return response()->json([
+            'status' => 'Callback received successfully',
+            'data' => $result['data'] ?? [],
+        ], 200);
     }
 
     public function freshpay_status(string $reference)
