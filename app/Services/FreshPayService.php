@@ -56,25 +56,14 @@ class FreshPayService
             return $data;
         }
 
-        $status = strtolower((string) (
-            data_get($data, 'status')
-            ?? data_get($data, 'Status')
-            ?? data_get($data, 'transaction_status')
-            ?? data_get($data, 'transaction.Status')
-            ?? 'pending'
-        ));
-        $reference = (string) (
-            data_get($data, 'reference')
-            ?? data_get($data, 'Reference')
-            ?? data_get($data, 'transaction.reference')
-            ?? data_get($data, 'transaction.Reference')
-            ?? ''
-        );
+        $status = $this->extractStatus($data);
+        $reference = $this->extractReference($data);
+        $message = $this->extractMessage($data) ?: __('Callback processed');
 
         return [
             'ok' => true,
             'http_status' => 200,
-            'message' => __('Callback processed'),
+            'message' => $message,
             'data' => $data,
             'reference' => $reference,
             'status' => $status,
@@ -178,20 +167,61 @@ class FreshPayService
 
     private function isAcceptedResponse(mixed $data): bool
     {
-        $status = strtolower((string) (
-            data_get($data, 'status')
-            ?? data_get($data, 'Status')
-            ?? ''
-        ));
+        $status = $this->extractStatus($data);
         $state = strtolower((string) (
             data_get($data, 'data.status')
             ?? data_get($data, 'data.Status')
+            ?? data_get($data, 'data.transaction_status')
             ?? ''
         ));
 
         return in_array($status, ['success', 'ok', 'accepted', 'pending'], true)
             || in_array($state, ['success', 'ok', 'accepted', 'pending'], true)
             || data_get($data, 'success') === true;
+    }
+
+    private function extractStatus(array $data): string
+    {
+        return strtolower((string) (
+            data_get($data, 'status')
+            ?? data_get($data, 'Status')
+            ?? data_get($data, 'transaction_status')
+            ?? data_get($data, 'transactionStatus')
+            ?? data_get($data, 'transaction.status')
+            ?? data_get($data, 'transaction.Status')
+            ?? data_get($data, 'state')
+            ?? data_get($data, 'State')
+            ?? data_get($data, 'result')
+            ?? data_get($data, 'Result')
+            ?? 'pending'
+        ));
+    }
+
+    private function extractReference(array $data): string
+    {
+        return (string) (
+            data_get($data, 'reference')
+            ?? data_get($data, 'Reference')
+            ?? data_get($data, 'transaction.reference')
+            ?? data_get($data, 'transaction.Reference')
+            ?? data_get($data, 'external_reference')
+            ?? ''
+        );
+    }
+
+    private function extractMessage(array $data): string
+    {
+        return (string) (
+            data_get($data, 'message')
+            ?? data_get($data, 'Message')
+            ?? data_get($data, 'comment')
+            ?? data_get($data, 'Comment')
+            ?? data_get($data, 'reason')
+            ?? data_get($data, 'Reason')
+            ?? data_get($data, 'description')
+            ?? data_get($data, 'Description')
+            ?? ''
+        );
     }
 
     private function extractCallbackData(Request $request): array
