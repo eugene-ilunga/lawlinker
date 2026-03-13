@@ -51,42 +51,9 @@ class FreshPayService
             ];
         }
 
-        $encryptedPayload = (string) $request->input('data', '');
-        $signature = (string) $request->header('X-Signature', '');
-
-        if ($encryptedPayload === '' || $signature === '') {
-            return [
-                'ok' => false,
-                'http_status' => 422,
-                'message' => __('Invalid callback format.'),
-            ];
-        }
-
-        if (! $this->verifyCallbackSignature($encryptedPayload, $signature)) {
-            return [
-                'ok' => false,
-                'http_status' => 403,
-                'message' => __('Invalid callback signature.'),
-            ];
-        }
-
-        $decrypted = $this->decryptCallbackData($encryptedPayload);
-        if ($decrypted === null) {
-            return [
-                'ok' => false,
-                'http_status' => 422,
-                'message' => __('Unable to decrypt callback payload.'),
-            ];
-        }
-
-        $data = json_decode($decrypted, true);
+        $data = $this->extractCallbackData($request);
         if (! is_array($data)) {
-            return [
-                'ok' => false,
-                'http_status' => 422,
-                'message' => __('Invalid decrypted callback payload.'),
-                'raw' => $decrypted,
-            ];
+            return $data;
         }
 
         $status = strtolower((string) (
@@ -130,9 +97,9 @@ class FreshPayService
             'currency' => $input['currency'] ?? 'USD',
             'action' => $action,
             'customer_number' => $input['customer_number'],
-            'firstname' => $input['firstname'] ?? ($settings->freshpay_firstname ?? 'Fresh'),
-            'lastname' => $input['lastname'] ?? ($settings->freshpay_lastname ?? 'Pay'),
-            'email' => $input['email'] ?? ($settings->freshpay_email ?? 'support@example.com'),
+            'firstname' => $settings->freshpay_firstname ?? 'Fresh',
+            'lastname' => $settings->freshpay_lastname ?? 'Pay',
+            'email' => $settings->freshpay_email ?? 'support@example.com',
             'reference' => $input['reference'],
             'method' => strtolower($input['method']),
             'callback_url' => $input['callback_url'],
@@ -225,6 +192,59 @@ class FreshPayService
         return in_array($status, ['success', 'ok', 'accepted', 'pending'], true)
             || in_array($state, ['success', 'ok', 'accepted', 'pending'], true)
             || data_get($data, 'success') === true;
+    }
+
+    private function extractCallbackData(Request $request): array
+    {
+        $plainData = $request->all();
+        if (is_array($plainData) && (
+            array_key_exists('status', $plainData)
+            || array_key_exists('Status', $plainData)
+            || array_key_exists('reference', $plainData)
+            || array_key_exists('Reference', $plainData)
+        )) {
+            return $plainData;
+        }
+
+        $encryptedPayload = (string) $request->input('data', '');
+        $signature = (string) $request->header('X-Signature', '');
+
+        if ($encryptedPayload === '') {
+            return [
+                'ok' => false,
+                'http_status' => 422,
+                'message' => __('Invalid callback format.'),
+            ];
+        }
+
+        if ($signature !== '' && ! $this->verifyCallbackSignature($encryptedPayload, $signature)) {
+            return [
+                'ok' => false,
+                'http_status' => 403,
+                'message' => __('Invalid callback signature.'),
+            ];
+        }
+
+        $decrypted = $this->decryptCallbackData($encryptedPayload);
+        if ($decrypted === null) {
+            return [
+                'ok' => false,
+                'http_status' => 422,
+                'message' => __('Unable to decrypt callback payload.'),
+            ];
+        }
+
+        $data = json_decode($decrypted, true);
+        if (! is_array($data)) {
+            return [
+                'ok' => false,
+                'http_status' => 422,
+                'message' => __('Invalid decrypted callback payload.'),
+                'raw' => $decrypted,
+            ];
+        }
+
+        return $data;
     }
 
     private function verifyCallbackSignature(string $encryptedPayload, string $signature): bool
