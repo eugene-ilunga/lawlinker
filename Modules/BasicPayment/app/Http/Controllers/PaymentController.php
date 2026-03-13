@@ -24,7 +24,6 @@ use App\Rules\RdcPhoneNumber;
 use App\Services\FreshPayService;
 use App\Services\FreshPayTransactionService;
 use App\Services\RdcPhoneFormatter;
-use Modules\BasicPayment\app\Models\FreshPayTransaction;
 
 class PaymentController extends Controller {
     use GetGlobalInformationTrait, GlobalMailTrait;
@@ -294,7 +293,8 @@ class PaymentController extends Controller {
 
     public function freshpay_status(string $reference)
     {
-        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+        $transaction = app(FreshPayTransactionService::class)->findByReference($reference);
+        abort_if(! $transaction, 404);
 
         abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
 
@@ -308,11 +308,12 @@ class PaymentController extends Controller {
 
     public function freshpay_status_poll(string $reference)
     {
-        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+        $transactionService = app(FreshPayTransactionService::class);
+        $transaction = $transactionService->findByReference($reference);
+        abort_if(! $transaction, 404);
 
         abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
 
-        $transactionService = app(FreshPayTransactionService::class);
         $status = $transactionService->normalizeStatus($transaction->status);
         $message = $transaction->message ?: $transactionService->defaultMessageForStatus($status);
 
@@ -332,11 +333,12 @@ class PaymentController extends Controller {
 
     public function freshpay_complete(string $reference)
     {
-        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+        $transactionService = app(FreshPayTransactionService::class);
+        $transaction = $transactionService->findByReference($reference);
+        abort_if(! $transaction, 404);
 
         abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
 
-        $transactionService = app(FreshPayTransactionService::class);
         if ($transactionService->normalizeStatus($transaction->status) !== FreshPayTransactionService::STATUS_SUCCESS) {
             return redirect()->route('freshpay-status', ['reference' => $reference]);
         }
@@ -364,7 +366,8 @@ class PaymentController extends Controller {
 
     public function freshpay_retry(string $reference)
     {
-        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+        $transaction = app(FreshPayTransactionService::class)->findByReference($reference);
+        abort_if(! $transaction, 404);
 
         abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
 

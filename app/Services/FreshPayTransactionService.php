@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use Exception;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\BasicPayment\app\Models\FreshPayTransaction;
 use Modules\Lawyer\app\Models\Lawyer;
 use Modules\Order\app\Models\Order;
@@ -15,6 +18,8 @@ class FreshPayTransactionService
     public const STATUS_FAILED = 'failed';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_ERROR = 'error';
+
+    private const CACHE_TTL_SECONDS = 86400;
 
     public function normalizeStatus(?string $status): string
     {
@@ -28,9 +33,9 @@ class FreshPayTransactionService
         };
     }
 
-    public function createPendingTransaction(Order $order, ?int $userId, array $attributes): FreshPayTransaction
+    public function createPendingTransaction(Order $order, ?int $userId, array $attributes): object
     {
-        return FreshPayTransaction::create([
+        $payload = [
             'order_db_id' => $order->id,
             'order_public_id' => $order->order_id,
             'user_id' => $userId,
@@ -44,17 +49,31 @@ class FreshPayTransactionService
             'message' => $attributes['message'] ?? __('Payment request sent to FreshPay.'),
             'request_payload' => $attributes['request_payload'] ?? null,
             'response_payload' => $attributes['response_payload'] ?? null,
-        ]);
+            'callback_payload' => null,
+            'finalized_at' => null,
+            'completed_at' => null,
+        ];
+
+        try {
+            if ($this->tableExists()) {
+                return FreshPayTransaction::create($payload);
+            }
+        } catch (QueryException) {
+        }
+
+        $this->storeInCache($payload['reference'], $payload);
+
+        return $this->hydrateCachedTransaction($payload);
     }
 
-    public function updateFromCallback(array $result): ?FreshPayTransaction
+    public function updateFromCallback(array $result): ?object
     {
         $reference = (string) ($result['reference'] ?? '');
         if ($reference === '') {
             return null;
         }
 
-        $transaction = FreshPayTransaction::where('reference', $reference)->first();
+        $transaction = $this->findByReference($reference);
         if (! $transaction) {
             return null;
         }
@@ -65,17 +84,17 @@ class FreshPayTransactionService
             $message = $this->defaultMessageForStatus($status);
         }
 
-        $transaction->update([
+        $updates = [
             'status' => $status,
             'message' => $message,
             'callback_payload' => $result['data'] ?? null,
             'completed_at' => $status === self::STATUS_PROCESSING ? null : now(),
-        ]);
+        ];
 
-        return $transaction->fresh();
+        return $this->persistTransactionUpdate($transaction, $updates);
     }
 
-    public function finalizeSuccessfulTransaction(FreshPayTransaction $transaction): bool
+    public function finalizeSuccessfulTransaction(object $transaction): bool
     {
         if ($transaction->status !== self::STATUS_SUCCESS) {
             return false;
@@ -115,7 +134,7 @@ class FreshPayTransactionService
                 }
             }
 
-            $transaction->update(['finalized_at' => now()]);
+            $this->persistTransactionUpdate($transaction, ['finalized_at' => now()]);
 
             DB::commit();
 
@@ -135,5 +154,70 @@ class FreshPayTransactionService
             self::STATUS_ERROR => __('A payment error occurred.'),
             default => __('Payment is being processed by FreshPay.'),
         };
+    }
+
+    public function findByReference(string $reference): ?object
+    {
+        try {
+            if ($this->tableExists()) {
+                $transaction = FreshPayTransaction::where('reference', $reference)->first();
+                if ($transaction) {
+                    return $transaction;
+                }
+            }
+        } catch (QueryException) {
+        }
+
+        $payload = Cache::get($this->cacheKey($reference));
+
+        return is_array($payload) ? $this->hydrateCachedTransaction($payload) : null;
+    }
+
+    private function persistTransactionUpdate(object $transaction, array $updates): object
+    {
+        if ($transaction instanceof FreshPayTransaction) {
+            $transaction->update($updates);
+            return $transaction->fresh();
+        }
+
+        $payload = array_merge((array) $transaction, $updates);
+        $this->storeInCache((string) $transaction->reference, $payload);
+
+        return $this->hydrateCachedTransaction($payload);
+    }
+
+    private function tableExists(): bool
+    {
+        static $exists;
+
+        if ($exists !== null) {
+            return $exists;
+        }
+
+        try {
+            $exists = Schema::hasTable('freshpay_transactions');
+        } catch (Exception) {
+            $exists = false;
+        }
+
+        return $exists;
+    }
+
+    private function storeInCache(string $reference, array $payload): void
+    {
+        Cache::put($this->cacheKey($reference), $payload, now()->addSeconds(self::CACHE_TTL_SECONDS));
+    }
+
+    private function cacheKey(string $reference): string
+    {
+        return 'freshpay_transaction:'.$reference;
+    }
+
+    private function hydrateCachedTransaction(array $payload): object
+    {
+        $transaction = (object) $payload;
+        $transaction->order = Order::find($payload['order_db_id'] ?? null);
+
+        return $transaction;
     }
 }
