@@ -409,7 +409,7 @@ class PaymentController extends Controller {
 
         $this->paymentService->removeSessions();
 
-        return redirect()->to(url('/payment?order_id='.$transaction->order_public_id))
+        return redirect()->to(url('/client/payment?order_id='.$transaction->order_public_id))
             ->with(['message' => $transaction->message ?: __('Payment failed, please try again'), 'alert-type' => 'error']);
     }
     public function pay_via_paypal() {
