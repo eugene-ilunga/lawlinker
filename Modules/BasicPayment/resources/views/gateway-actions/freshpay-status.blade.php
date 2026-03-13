@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>{{ __('FreshPay Payment Status') }}</title>
+    <title>Statut du paiement FreshPay</title>
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset($setting->favicon) }}">
     <link rel="stylesheet" href="{{ asset('backend/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('client/css/style.css') }}?v={{ $setting?->version }}">
@@ -20,25 +20,25 @@
         <div class="container d-flex justify-content-center">
             <div class="card shadow-sm freshpay-status-card w-100">
                 <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ __('FreshPay Payment') }}</h5>
+                    <h5 class="mb-0">Paiement FreshPay</h5>
                     <span id="status-badge" class="badge bg-warning text-dark freshpay-badge">{{ strtoupper($transaction->status) }}</span>
                 </div>
                 <div class="card-body">
-                    <h4 class="mb-3">{{ __('Your payment is being processed') }}</h4>
-                    <p class="mb-2">{{ __('Reference') }}: <strong>{{ $transaction->reference }}</strong></p>
-                    <p class="mb-2">{{ __('Order') }}: <strong>#{{ $transaction->order_public_id }}</strong></p>
-                    <p class="mb-3">{{ __('Amount') }}: <strong>{{ number_format((float) $transaction->amount, 2) }} {{ $transaction->currency }}</strong></p>
+                    <h4 class="mb-3">Votre paiement est en cours de traitement</h4>
+                    <p class="mb-2">Référence : <strong>{{ $transaction->reference }}</strong></p>
+                    <p class="mb-2">Commande : <strong>#{{ $transaction->order_public_id }}</strong></p>
+                    <p class="mb-3">Montant : <strong>{{ number_format((float) $transaction->amount, 2) }} {{ $transaction->currency }}</strong></p>
 
                     <div class="alert alert-info mb-3" id="status-message">
-                        {{ $transaction->message ?: __('Payment is being processed by FreshPay.') }}
+                        {{ $transaction->message ?: 'Le paiement est en cours de traitement par FreshPay.' }}
                     </div>
 
                     <div class="small text-muted">
-                        {{ __('Please confirm the payment in your mobile money popup. This page will update automatically as soon as FreshPay sends us the final status.') }}
+                        Veuillez confirmer le paiement dans votre popup mobile money. Cette page se mettra a jour automatiquement des que FreshPay nous enverra le statut final.
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ $retryUrl }}" class="btn btn-outline-secondary">{{ __('Change payment method') }}</a>
+                        <a href="{{ $retryUrl }}" class="btn btn-outline-secondary">Changer de moyen de paiement</a>
                     </div>
                 </div>
             </div>
@@ -89,7 +89,7 @@
                     }
                 } catch (error) {
                     messageBox.className = 'alert alert-warning mb-3';
-                    messageBox.textContent = @json(__('Unable to refresh payment status right now. Retrying...'));
+                    messageBox.textContent = 'Impossible d\'actualiser le statut du paiement pour le moment. Nouvelle tentative...';
                 }
 
                 window.setTimeout(poll, 3000);

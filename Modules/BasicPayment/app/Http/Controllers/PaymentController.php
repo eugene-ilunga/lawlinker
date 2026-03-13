@@ -222,6 +222,7 @@ class PaymentController extends Controller {
             return redirect()->route('payment-failed');
         }
 
+        $user = userAuth();
         $service = app(FreshPayService::class);
         $reference = $service->generateReference('LPD');
         $customerNumber = RdcPhoneFormatter::normalizeForFreshPay($request->customer_number);
