@@ -492,9 +492,6 @@ class PaymentController extends Controller {
             'customer_number' => $customerNumber,
             'reference' => $reference,
             'method' => $request->method,
-            'firstname' => $user?->name ? explode(' ', trim($user->name))[0] : null,
-            'lastname' => $user?->name && count(explode(' ', trim($user->name))) > 1 ? trim(implode(' ', array_slice(explode(' ', trim($user->name)), 1))) : null,
-            'email' => $user?->email,
             'callback_url' => route('payment-api.freshpay-callback'),
         ]);
 
