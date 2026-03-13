@@ -572,6 +572,7 @@ class PaymentController extends Controller {
     public function freshpay_status_poll(string $reference)
     {
         $user = auth()->guard('api')->user();
+        $freshPayService = app(FreshPayService::class);
         $transactionService = app(FreshPayTransactionService::class);
         $transaction = $transactionService->findByReference($reference);
         abort_if(! $transaction, 404);
@@ -580,6 +581,29 @@ class PaymentController extends Controller {
 
         $status = $transactionService->normalizeStatus($transaction->status);
         $message = $transaction->message ?: $transactionService->defaultMessageForStatus($status);
+
+        if ($status === FreshPayTransactionService::STATUS_PROCESSING) {
+            $verify = $freshPayService->verify($reference);
+
+            info('FreshPay API verify response', [
+                'reference' => $reference,
+                'ok' => $verify['ok'] ?? null,
+                'message' => $verify['message'] ?? null,
+                'response' => $verify['response'] ?? null,
+            ]);
+
+            if (($verify['ok'] ?? false) || ! empty(data_get($verify, 'response.Trans_Status'))) {
+                $verifiedStatus = [
+                    'status' => data_get($verify, 'response.Trans_Status', data_get($verify, 'response.Status')),
+                    'message' => data_get($verify, 'response.Trans_Status_Description', $verify['message'] ?? null),
+                    'data' => $verify['response'] ?? [],
+                ];
+
+                $transaction = $transactionService->updateFromGatewayStatus($reference, $verifiedStatus) ?? $transaction;
+                $status = $transactionService->normalizeStatus($transaction->status);
+                $message = $transaction->message ?: $transactionService->defaultMessageForStatus($status);
+            }
+        }
 
         if ($status === FreshPayTransactionService::STATUS_SUCCESS) {
             $finalized = $transactionService->finalizeSuccessfulTransaction($transaction);

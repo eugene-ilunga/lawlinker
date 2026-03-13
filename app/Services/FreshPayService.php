@@ -39,6 +39,13 @@ class FreshPayService
         return $this->request('credit', $input);
     }
 
+    public function verify(string $reference): array
+    {
+        return $this->request('verify', [
+            'reference' => $reference,
+        ]);
+    }
+
     public function processCallback(Request $request): array
     {
         $ip = $request->ip();
@@ -82,26 +89,27 @@ class FreshPayService
         $payload = [
             'merchant_id' => $merchantId,
             'merchant_secrete' => $merchantSecret,
-            'amount' => (string) $input['amount'],
-            'currency' => $input['currency'] ?? 'USD',
             'action' => $action,
-            'customer_number' => $input['customer_number'],
-            'firstname' => $settings->freshpay_firstname ?? 'Fresh',
-            'lastname' => $settings->freshpay_lastname ?? 'Pay',
-            'email' => $settings->freshpay_email ?? 'support@example.com',
             'reference' => $input['reference'],
-            'method' => strtolower($input['method']),
-            'callback_url' => $input['callback_url'],
         ];
+        if ($action !== 'verify') {
+            $payload['amount'] = (string) $input['amount'];
+            $payload['currency'] = $input['currency'] ?? 'USD';
+            $payload['customer_number'] = $input['customer_number'];
+            $payload['firstname'] = $settings->freshpay_firstname ?? 'Fresh';
+            $payload['lastname'] = $settings->freshpay_lastname ?? 'Pay';
+            $payload['email'] = $settings->freshpay_email ?? 'support@example.com';
+            $payload['e-mail'] = $payload['email'];
+            $payload['method'] = strtolower($input['method']);
+            $payload['callback_url'] = $input['callback_url'];
 
-        $payload['e-mail'] = $payload['email'];
+            if (! empty($settings->freshpay_callback_aes_key)) {
+                $payload['encryption_key'] = $settings->freshpay_callback_aes_key;
+            }
 
-        if (! empty($settings->freshpay_callback_aes_key)) {
-            $payload['encryption_key'] = $settings->freshpay_callback_aes_key;
-        }
-
-        if (! empty($settings->freshpay_callback_aes_iv)) {
-            $payload['encryption_iv'] = $settings->freshpay_callback_aes_iv;
+            if (! empty($settings->freshpay_callback_aes_iv)) {
+                $payload['encryption_iv'] = $settings->freshpay_callback_aes_iv;
+            }
         }
 
         if ($endpoint === '' || $merchantId === '' || $merchantSecret === '') {
@@ -119,6 +127,12 @@ class FreshPayService
         }
 
         try {
+            Log::info('FreshPay request sending', [
+                'action' => $action,
+                'endpoint' => $endpoint,
+                'payload' => $this->maskSensitivePayload($payload),
+            ]);
+
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
@@ -147,6 +161,7 @@ class FreshPayService
                     ?? data_get($data, 'Message')
                     ?? data_get($data, 'comment')
                     ?? data_get($data, 'Comment')
+                    ?? data_get($data, 'Trans_Status_Description')
                     ?? ($ok ? __('FreshPay request sent.') : __('FreshPay request failed.')),
                 'payload' => $payload,
                 'response' => $data,
@@ -184,8 +199,10 @@ class FreshPayService
 
     private function extractStatus(array $data): string
     {
-        return strtolower((string) (
-            data_get($data, 'status')
+        $status = strtolower((string) (
+            data_get($data, 'Trans_Status')
+            ?? data_get($data, 'trans_status')
+            ?? data_get($data, 'status')
             ?? data_get($data, 'Status')
             ?? data_get($data, 'transaction_status')
             ?? data_get($data, 'transactionStatus')
@@ -197,6 +214,13 @@ class FreshPayService
             ?? data_get($data, 'Result')
             ?? 'pending'
         ));
+
+        return match ($status) {
+            'successful' => 'success',
+            'submitted' => 'processing',
+            'pending' => 'processing',
+            default => $status,
+        };
     }
 
     private function extractReference(array $data): string
@@ -218,6 +242,7 @@ class FreshPayService
             ?? data_get($data, 'Message')
             ?? data_get($data, 'comment')
             ?? data_get($data, 'Comment')
+            ?? data_get($data, 'Trans_Status_Description')
             ?? data_get($data, 'reason')
             ?? data_get($data, 'Reason')
             ?? data_get($data, 'description')
@@ -229,6 +254,12 @@ class FreshPayService
     private function extractCallbackData(Request $request): array
     {
         $plainData = $request->all();
+        Log::info('FreshPay callback raw input', [
+            'ip' => $request->ip(),
+            'payload' => $plainData,
+            'has_signature' => $request->header('X-Signature') !== null,
+        ]);
+
         if (is_array($plainData) && (
             array_key_exists('status', $plainData)
             || array_key_exists('Status', $plainData)
@@ -275,6 +306,10 @@ class FreshPayService
                 'raw' => $decrypted,
             ];
         }
+
+        Log::info('FreshPay callback decrypted payload', [
+            'payload' => $data,
+        ]);
 
         return $data;
     }

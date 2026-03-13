@@ -96,6 +96,27 @@ class FreshPayTransactionService
         return $this->persistTransactionUpdate($transaction, $updates);
     }
 
+    public function updateFromGatewayStatus(string $reference, array $gatewayData): ?object
+    {
+        $transaction = $this->findByReference($reference);
+        if (! $transaction) {
+            return null;
+        }
+
+        $status = $this->normalizeStatus($gatewayData['status'] ?? null);
+        $message = (string) ($gatewayData['message'] ?? '');
+        if ($message === '') {
+            $message = $this->defaultMessageForStatus($status);
+        }
+
+        return $this->persistTransactionUpdate($transaction, [
+            'status' => $status,
+            'message' => $message,
+            'callback_payload' => $gatewayData['data'] ?? null,
+            'completed_at' => $status === self::STATUS_PROCESSING ? null : now(),
+        ]);
+    }
+
     public function finalizeSuccessfulTransaction(object $transaction): bool
     {
         if ($transaction->status !== self::STATUS_SUCCESS) {
