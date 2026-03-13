@@ -83,10 +83,10 @@ Route::group(['as'=> 'payment-api.'],function (){
     Route::post('flutterwave-webview',[PaymentApiController::class, 'flutterwave_payment'])->name('flutterwave-webview')->middleware('payment.api');
     Route::get('paystack-webview',[PaymentApiController::class, 'paystack_payment'])->name('paystack-webview')->middleware('payment.api');
     Route::post('freshpay-webview',[PaymentApiController::class, 'pay_via_freshpay'])->name('freshpay-webview')->middleware('payment.api');
-    Route::get('freshpay-status/{reference}', [PaymentApiController::class, 'freshpay_status'])->name('freshpay-status')->middleware('payment.api');
-    Route::get('freshpay-status/{reference}/poll', [PaymentApiController::class, 'freshpay_status_poll'])->name('freshpay-status-poll')->middleware('payment.api');
-    Route::get('freshpay-status/{reference}/complete', [PaymentApiController::class, 'freshpay_complete'])->name('freshpay-complete')->middleware('payment.api');
-    Route::get('freshpay-status/{reference}/retry', [PaymentApiController::class, 'freshpay_retry'])->name('freshpay-retry')->middleware('payment.api');
+    Route::get('app/freshpay-status/{reference}', [PaymentApiController::class, 'freshpay_status'])->name('freshpay-status')->middleware('payment.api');
+    Route::get('app/freshpay-status/{reference}/poll', [PaymentApiController::class, 'freshpay_status_poll'])->name('freshpay-status-poll')->middleware('payment.api');
+    Route::get('app/freshpay-status/{reference}/complete', [PaymentApiController::class, 'freshpay_complete'])->name('freshpay-complete')->middleware('payment.api');
+    Route::get('app/freshpay-status/{reference}/retry', [PaymentApiController::class, 'freshpay_retry'])->name('freshpay-retry')->middleware('payment.api');
     Route::match(['get', 'post'], 'freshpay-webview-callback',[PaymentApiController::class, 'freshpay_callback'])->name('freshpay-callback');
 
     Route::get('instamojo-webview', [PaymentApiController::class, 'pay_via_instamojo'])->name('instamojo-webview')->middleware('payment.api');

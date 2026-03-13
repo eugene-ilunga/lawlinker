@@ -260,7 +260,7 @@ class PaymentController extends Controller {
             'response_payload' => $response['response'] ?? null,
         ]);
 
-        return redirect()->route('freshpay-status', ['reference' => $reference]);
+        return redirect()->to(url('/freshpay-status/'.$reference));
     }
 
     public function freshpay_callback(Request $request) {
@@ -300,9 +300,9 @@ class PaymentController extends Controller {
 
         return view('basicpayment::gateway-actions.freshpay-status', [
             'transaction' => $transaction,
-            'pollUrl' => route('freshpay-status-poll', ['reference' => $reference]),
-            'successUrl' => route('freshpay-complete', ['reference' => $reference]),
-            'retryUrl' => route('freshpay-retry', ['reference' => $reference]),
+            'pollUrl' => url('/freshpay-status/'.$reference.'/poll'),
+            'successUrl' => url('/freshpay-status/'.$reference.'/complete'),
+            'retryUrl' => url('/freshpay-status/'.$reference.'/retry'),
         ]);
     }
 
@@ -340,12 +340,12 @@ class PaymentController extends Controller {
         abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
 
         if ($transactionService->normalizeStatus($transaction->status) !== FreshPayTransactionService::STATUS_SUCCESS) {
-            return redirect()->route('freshpay-status', ['reference' => $reference]);
+            return redirect()->to(url('/freshpay-status/'.$reference));
         }
 
         $wasFinalized = (bool) $transaction->finalized_at;
         if (! $transactionService->finalizeSuccessfulTransaction($transaction)) {
-            return redirect()->route('freshpay-retry', ['reference' => $reference])
+            return redirect()->to(url('/freshpay-status/'.$reference.'/retry'))
                 ->with(['message' => __('Payment was confirmed but the order finalization failed. Please contact support.'), 'alert-type' => 'error']);
         }
 
@@ -373,7 +373,7 @@ class PaymentController extends Controller {
 
         $this->paymentService->removeSessions();
 
-        return redirect()->route('payment', ['order_id' => $transaction->order_public_id])
+        return redirect()->to(url('/payment?order_id='.$transaction->order_public_id))
             ->with(['message' => $transaction->message ?: __('Payment failed, please try again'), 'alert-type' => 'error']);
     }
     public function pay_via_paypal() {
