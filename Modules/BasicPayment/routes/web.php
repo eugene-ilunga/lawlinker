@@ -56,10 +56,11 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     
         Route::get('pay-via-instamojo', 'pay_via_instamojo')->name('pay-via-instamojo');
         Route::get('instamojo-success', 'instamojo_success')->name('instamojo-success');
-        Route::match(['get', 'post'], 'freshpay-callback', 'freshpay_callback')->name('freshpay-callback');
     });
     Route::get('paypal-success-payment', [FrontPaymentController::class, 'paypal_success'])->name('paypal-success-payment');
 });
+
+Route::match(['get', 'post'], 'freshpay-callback', [PaymentController::class, 'freshpay_callback'])->name('freshpay-callback');
 
 //For API
 

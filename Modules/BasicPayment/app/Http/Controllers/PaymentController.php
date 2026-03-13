@@ -264,6 +264,15 @@ class PaymentController extends Controller {
     }
 
     public function freshpay_callback(Request $request) {
+        info('FreshPay callback received', [
+            'ip' => $request->ip(),
+            'payload' => $request->all(),
+            'headers' => [
+                'x-signature' => $request->header('X-Signature'),
+                'content-type' => $request->header('Content-Type'),
+            ],
+        ]);
+
         $service = app(FreshPayService::class);
         $result = $service->processCallback($request);
 
