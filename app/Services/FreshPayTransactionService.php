@@ -61,6 +61,8 @@ class FreshPayTransactionService
         } catch (QueryException) {
         }
 
+        $this->storeOnOrder($order, $payload);
+
         $this->storeInCache($payload['reference'], $payload);
 
         return $this->hydrateCachedTransaction($payload);
@@ -168,6 +170,11 @@ class FreshPayTransactionService
         } catch (QueryException) {
         }
 
+        $order = Order::where('payment_transaction_id', $reference)->first();
+        if ($order) {
+            return $this->hydrateOrderTransaction($order);
+        }
+
         $payload = Cache::get($this->cacheKey($reference));
 
         return is_array($payload) ? $this->hydrateCachedTransaction($payload) : null;
@@ -178,6 +185,17 @@ class FreshPayTransactionService
         if ($transaction instanceof FreshPayTransaction) {
             $transaction->update($updates);
             return $transaction->fresh();
+        }
+
+        if (isset($transaction->order_db_id)) {
+            $order = Order::find($transaction->order_db_id);
+            if ($order) {
+                $payload = array_merge((array) $transaction, $updates);
+                $this->storeOnOrder($order, $payload);
+                $this->storeInCache((string) $transaction->reference, $payload);
+
+                return $this->hydrateOrderTransaction($order->fresh());
+            }
         }
 
         $payload = array_merge((array) $transaction, $updates);
@@ -219,5 +237,72 @@ class FreshPayTransactionService
         $transaction->order = Order::find($payload['order_db_id'] ?? null);
 
         return $transaction;
+    }
+
+    private function storeOnOrder(Order $order, array $payload): void
+    {
+        $existingDescription = $this->decodeOrderPaymentDescription($order);
+        $existingDescription['freshpay_tracking'] = [
+            'order_db_id' => $payload['order_db_id'] ?? $order->id,
+            'order_public_id' => $payload['order_public_id'] ?? $order->order_id,
+            'user_id' => $payload['user_id'] ?? $order->user_id,
+            'reference' => $payload['reference'] ?? $order->payment_transaction_id,
+            'channel' => $payload['channel'] ?? 'web',
+            'customer_number' => $payload['customer_number'] ?? null,
+            'operator' => $payload['operator'] ?? null,
+            'amount' => $payload['amount'] ?? 0,
+            'currency' => $payload['currency'] ?? 'USD',
+            'status' => $payload['status'] ?? self::STATUS_PROCESSING,
+            'message' => $payload['message'] ?? null,
+            'request_payload' => $payload['request_payload'] ?? null,
+            'response_payload' => $payload['response_payload'] ?? null,
+            'callback_payload' => $payload['callback_payload'] ?? null,
+            'finalized_at' => $payload['finalized_at'] ?? null,
+            'completed_at' => $payload['completed_at'] ?? null,
+        ];
+
+        $order->payment_transaction_id = $payload['reference'] ?? $order->payment_transaction_id;
+        $order->payment_description = json_encode($existingDescription);
+        $order->save();
+    }
+
+    private function hydrateOrderTransaction(Order $order): object
+    {
+        $description = $this->decodeOrderPaymentDescription($order);
+        $tracking = is_array($description['freshpay_tracking'] ?? null) ? $description['freshpay_tracking'] : [];
+
+        $transaction = (object) array_merge([
+            'order_db_id' => $order->id,
+            'order_public_id' => $order->order_id,
+            'user_id' => $order->user_id,
+            'reference' => $order->payment_transaction_id,
+            'channel' => 'web',
+            'customer_number' => null,
+            'operator' => null,
+            'amount' => $order->paid_amount,
+            'currency' => $order->payable_currency ?? 'USD',
+            'status' => self::STATUS_PROCESSING,
+            'message' => null,
+            'request_payload' => null,
+            'response_payload' => null,
+            'callback_payload' => null,
+            'finalized_at' => null,
+            'completed_at' => null,
+        ], $tracking);
+
+        $transaction->order = $order;
+
+        return $transaction;
+    }
+
+    private function decodeOrderPaymentDescription(Order $order): array
+    {
+        if (! $order->payment_description) {
+            return [];
+        }
+
+        $decoded = json_decode($order->payment_description, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }
