@@ -140,4 +140,29 @@
             activeTabSetupLocally('basicPaymentTab')
         });
     </script>
+    <script>
+        (function() {
+            const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+
+            document.querySelectorAll('.freshpay-generate-key').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const targetId = this.dataset.target;
+                    const length = Number(this.dataset.length || 32);
+                    const input = document.getElementById(targetId);
+
+                    if (!input) {
+                        return;
+                    }
+
+                    let value = '';
+                    for (let i = 0; i < length; i += 1) {
+                        value += alphabet[Math.floor(Math.random() * alphabet.length)];
+                    }
+
+                    input.value = value;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+            });
+        })();
+    </script>
 @endpush

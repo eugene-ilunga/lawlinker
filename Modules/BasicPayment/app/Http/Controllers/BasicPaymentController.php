@@ -281,6 +281,12 @@ class BasicPaymentController extends Controller {
             'freshpay_api_url' => 'required|url',
             'freshpay_merchant_id' => 'required|string|max:190',
             'freshpay_merchant_secret' => 'required|string|max:190',
+            'freshpay_firstname' => 'required|string|max:190',
+            'freshpay_lastname' => 'required|string|max:190',
+            'freshpay_email' => 'required|email|max:190',
+            'freshpay_callback_signature_secret' => 'nullable|string|max:255',
+            'freshpay_callback_aes_key' => 'nullable|string|max:255',
+            'freshpay_callback_aes_iv' => 'nullable|string|max:255',
             'freshpay_charge' => 'required|numeric|max:100',
             'freshpay_status' => 'required|in:inactive,active',
         ];
@@ -289,6 +295,10 @@ class BasicPaymentController extends Controller {
             'freshpay_api_url.url' => __('API URL must be valid'),
             'freshpay_merchant_id.required' => __('Merchant ID is required'),
             'freshpay_merchant_secret.required' => __('Merchant secret is required'),
+            'freshpay_firstname.required' => __('Firstname is required'),
+            'freshpay_lastname.required' => __('Lastname is required'),
+            'freshpay_email.required' => __('Email is required'),
+            'freshpay_email.email' => __('Email must be valid'),
             'freshpay_charge.required' => __('Gateway charge is required'),
             'freshpay_charge.numeric' => __('Gateway charge should be numeric'),
         ];
@@ -299,6 +309,12 @@ class BasicPaymentController extends Controller {
             'freshpay_api_url',
             'freshpay_merchant_id',
             'freshpay_merchant_secret',
+            'freshpay_firstname',
+            'freshpay_lastname',
+            'freshpay_email',
+            'freshpay_callback_signature_secret',
+            'freshpay_callback_aes_key',
+            'freshpay_callback_aes_iv',
             'freshpay_charge',
             'freshpay_status'
         ));

@@ -39,7 +39,7 @@
                             <div class="my-1 form-group">
                                 <label for="customer_number">{{ __('Phone Number') }} <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="customer_number" name="customer_number"
-                                    placeholder="899730021 / 0899730021" required>
+                                    placeholder="0900000000/900000000" required>
                             </div>
 
                             <div class="my-1 form-group">

@@ -22,7 +22,9 @@ use Razorpay\Api\Api;
 use App\Http\Requests\BankInformationRequest;
 use App\Rules\RdcPhoneNumber;
 use App\Services\FreshPayService;
+use App\Services\FreshPayTransactionService;
 use App\Services\RdcPhoneFormatter;
+use Modules\BasicPayment\app\Models\FreshPayTransaction;
 
 class PaymentController extends Controller {
     use GetGlobalInformationTrait, GlobalMailTrait;
@@ -30,7 +32,15 @@ class PaymentController extends Controller {
     public function __construct() {
         $this->paymentService = app(\Modules\BasicPayment\app\Services\PaymentMethodService::class);
         $this->middleware(function (Request $request, Closure $next) {
-            if (session()->has('order') || Route::is('payment') || Route::is('place.order')) {
+            if (
+                session()->has('order')
+                || Route::is('payment')
+                || Route::is('place.order')
+                || Route::is('freshpay-status')
+                || Route::is('freshpay-status-poll')
+                || Route::is('freshpay-complete')
+                || Route::is('freshpay-retry')
+            ) {
                 return $next($request);
             }
             return redirect()->back()->with(['message' => __('Not Found!'), 'alert-type' => 'error']);
@@ -222,6 +232,9 @@ class PaymentController extends Controller {
             'customer_number' => $customerNumber,
             'reference' => $reference,
             'method' => $request->method,
+            'firstname' => $user?->name ? explode(' ', trim($user->name))[0] : null,
+            'lastname' => $user?->name && count(explode(' ', trim($user->name))) > 1 ? trim(implode(' ', array_slice(explode(' ', trim($user->name)), 1))) : null,
+            'email' => $user?->email,
             'callback_url' => route('freshpay-callback'),
         ]);
 
@@ -238,10 +251,19 @@ class PaymentController extends Controller {
             ]);
         }
 
-        Session::put('after_success_transaction', $reference);
-        Session::put('payment_details', $response['response'] ?? []);
+        app(FreshPayTransactionService::class)->createPendingTransaction($order, $user?->id, [
+            'reference' => $reference,
+            'channel' => 'web',
+            'customer_number' => $customerNumber,
+            'operator' => $request->method,
+            'amount' => session()->get('paid_amount', $order->paid_amount),
+            'currency' => 'USD',
+            'message' => $response['message'] ?? __('Payment request sent to FreshPay.'),
+            'request_payload' => $response['payload'] ?? null,
+            'response_payload' => $response['response'] ?? null,
+        ]);
 
-        return $this->payment_success();
+        return redirect()->route('freshpay-status', ['reference' => $reference]);
     }
 
     public function freshpay_callback(Request $request) {
@@ -267,7 +289,91 @@ class PaymentController extends Controller {
             'is_success' => $result['is_success'] ?? false,
         ]);
 
+        app(FreshPayTransactionService::class)->updateFromCallback($result);
+
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    public function freshpay_status(string $reference)
+    {
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
+
+        return view('basicpayment::gateway-actions.freshpay-status', [
+            'transaction' => $transaction,
+            'pollUrl' => route('freshpay-status-poll', ['reference' => $reference]),
+            'successUrl' => route('freshpay-complete', ['reference' => $reference]),
+            'retryUrl' => route('freshpay-retry', ['reference' => $reference]),
+        ]);
+    }
+
+    public function freshpay_status_poll(string $reference)
+    {
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
+
+        $transactionService = app(FreshPayTransactionService::class);
+        $status = $transactionService->normalizeStatus($transaction->status);
+        $message = $transaction->message ?: $transactionService->defaultMessageForStatus($status);
+
+        if ($status === FreshPayTransactionService::STATUS_SUCCESS) {
+            $finalized = $transactionService->finalizeSuccessfulTransaction($transaction);
+            if (! $finalized) {
+                $status = FreshPayTransactionService::STATUS_ERROR;
+                $message = __('Payment was confirmed, but we could not finalize the order yet.');
+            }
+        }
+
+        return response()->json([
+            'status' => $status,
+            'message' => $message,
+        ]);
+    }
+
+    public function freshpay_complete(string $reference)
+    {
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
+
+        $transactionService = app(FreshPayTransactionService::class);
+        if ($transactionService->normalizeStatus($transaction->status) !== FreshPayTransactionService::STATUS_SUCCESS) {
+            return redirect()->route('freshpay-status', ['reference' => $reference]);
+        }
+
+        $wasFinalized = (bool) $transaction->finalized_at;
+        if (! $transactionService->finalizeSuccessfulTransaction($transaction)) {
+            return redirect()->route('freshpay-retry', ['reference' => $reference])
+                ->with(['message' => __('Payment was confirmed but the order finalization failed. Please contact support.'), 'alert-type' => 'error']);
+        }
+
+        if (! $wasFinalized) {
+            try {
+                $user = userAuth();
+                [$subject, $message] = $this->fetchEmailTemplate('approve_payment', ['client_name' => $user->name, 'orderId' => "#{$transaction->order_public_id}"]);
+                $this->sendMail($user->email, $subject, $message);
+            } catch (Exception $e) {
+                info($e->getMessage());
+            }
+        }
+
+        $this->paymentService->removeSessions();
+
+        return redirect()->route('client.order')->with(['message' => __('Payment Success.'), 'alert-type' => 'success']);
+    }
+
+    public function freshpay_retry(string $reference)
+    {
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) userAuth()->id, 403);
+
+        $this->paymentService->removeSessions();
+
+        return redirect()->route('payment', ['order_id' => $transaction->order_public_id])
+            ->with(['message' => $transaction->message ?: __('Payment failed, please try again'), 'alert-type' => 'error']);
     }
     public function pay_via_paypal() {
         $basic_payment = $this->get_basic_payment_info();

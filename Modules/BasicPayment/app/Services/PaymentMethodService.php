@@ -134,6 +134,12 @@ class PaymentMethodService implements PaymentMethodInterface {
                 'freshpay_api_url' => $basicPayment->freshpay_api_url ?? null,
                 'freshpay_merchant_id' => $basicPayment->freshpay_merchant_id ?? null,
                 'freshpay_merchant_secret' => $basicPayment->freshpay_merchant_secret ?? null,
+                'freshpay_firstname' => $basicPayment->freshpay_firstname ?? null,
+                'freshpay_lastname' => $basicPayment->freshpay_lastname ?? null,
+                'freshpay_email' => $basicPayment->freshpay_email ?? null,
+                'freshpay_callback_signature_secret' => $basicPayment->freshpay_callback_signature_secret ?? null,
+                'freshpay_callback_aes_key' => $basicPayment->freshpay_callback_aes_key ?? null,
+                'freshpay_callback_aes_iv' => $basicPayment->freshpay_callback_aes_iv ?? null,
             ],
             default => (object) false,
         };

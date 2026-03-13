@@ -21,7 +21,9 @@ use Modules\BasicPayment\app\Enums\BasicPaymentSupportedCurrencyListEnum;
 use Razorpay\Api\Api;
 use App\Rules\RdcPhoneNumber;
 use App\Services\FreshPayService;
+use App\Services\FreshPayTransactionService;
 use App\Services\RdcPhoneFormatter;
+use Modules\BasicPayment\app\Models\FreshPayTransaction;
 
 class PaymentController extends Controller {
     use  GetGlobalInformationTrait, GlobalMailTrait;
@@ -490,6 +492,9 @@ class PaymentController extends Controller {
             'customer_number' => $customerNumber,
             'reference' => $reference,
             'method' => $request->method,
+            'firstname' => $user?->name ? explode(' ', trim($user->name))[0] : null,
+            'lastname' => $user?->name && count(explode(' ', trim($user->name))) > 1 ? trim(implode(' ', array_slice(explode(' ', trim($user->name)), 1))) : null,
+            'email' => $user?->email,
             'callback_url' => route('payment-api.freshpay-callback'),
         ]);
 
@@ -503,10 +508,20 @@ class PaymentController extends Controller {
             return redirect()->route('payment-api.webview-failed-payment');
         }
 
-        Session::put('after_success_transaction', $reference);
-        Session::put('payment_details', $response['response'] ?? []);
+        app(FreshPayTransactionService::class)->createPendingTransaction($order, $user?->id, [
+            'reference' => $reference,
+            'channel' => 'api',
+            'customer_number' => $customerNumber,
+            'operator' => $request->method,
+            'amount' => session()->get('paid_amount', $order->paid_amount),
+            'currency' => 'USD',
+            'message' => $response['message'] ?? __('Payment request sent to FreshPay.'),
+            'request_payload' => $response['payload'] ?? null,
+            'response_payload' => $response['response'] ?? null,
+        ]);
 
-        return redirect()->route('payment-api.webview-success-payment', [
+        return redirect()->route('payment-api.freshpay-status', [
+            'reference' => $reference,
             'bearer_token' => request()->bearer_token,
         ]);
     }
@@ -534,7 +549,98 @@ class PaymentController extends Controller {
             'is_success' => $result['is_success'] ?? false,
         ]);
 
+        app(FreshPayTransactionService::class)->updateFromCallback($result);
+
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    public function freshpay_status(string $reference)
+    {
+        $user = auth()->guard('api')->user();
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) $user?->id, 403);
+
+        return view('basicpayment::gateway-actions.freshpay-status', [
+            'transaction' => $transaction,
+            'pollUrl' => route('payment-api.freshpay-status-poll', ['reference' => $reference, 'bearer_token' => request()->bearer_token]),
+            'successUrl' => route('payment-api.freshpay-complete', ['reference' => $reference, 'bearer_token' => request()->bearer_token]),
+            'retryUrl' => route('payment-api.freshpay-retry', ['reference' => $reference, 'bearer_token' => request()->bearer_token]),
+        ]);
+    }
+
+    public function freshpay_status_poll(string $reference)
+    {
+        $user = auth()->guard('api')->user();
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) $user?->id, 403);
+
+        $transactionService = app(FreshPayTransactionService::class);
+        $status = $transactionService->normalizeStatus($transaction->status);
+        $message = $transaction->message ?: $transactionService->defaultMessageForStatus($status);
+
+        if ($status === FreshPayTransactionService::STATUS_SUCCESS) {
+            $finalized = $transactionService->finalizeSuccessfulTransaction($transaction);
+            if (! $finalized) {
+                $status = FreshPayTransactionService::STATUS_ERROR;
+                $message = __('Payment was confirmed, but we could not finalize the order yet.');
+            }
+        }
+
+        return response()->json([
+            'status' => $status,
+            'message' => $message,
+        ]);
+    }
+
+    public function freshpay_complete(string $reference)
+    {
+        $user = auth()->guard('api')->user();
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) $user?->id, 403);
+
+        $transactionService = app(FreshPayTransactionService::class);
+        if ($transactionService->normalizeStatus($transaction->status) !== FreshPayTransactionService::STATUS_SUCCESS) {
+            return redirect()->route('payment-api.freshpay-status', ['reference' => $reference, 'bearer_token' => request()->bearer_token]);
+        }
+
+        $wasFinalized = (bool) $transaction->finalized_at;
+        if (! $transactionService->finalizeSuccessfulTransaction($transaction)) {
+            return redirect()->route('payment-api.freshpay-retry', ['reference' => $reference, 'bearer_token' => request()->bearer_token]);
+        }
+
+        if (! $wasFinalized) {
+            try {
+                [$subject, $message] = $this->fetchEmailTemplate('approve_payment', ['client_name' => $user->name, 'orderId' => "#{$transaction->order_public_id}"]);
+                $this->sendMail($user->email, $subject, $message);
+            } catch (Exception $e) {
+                info($e->getMessage());
+            }
+        }
+
+        $this->paymentService->removeSessions();
+
+        $image = 'success.png';
+        $title = __('Order created successfully.');
+        $sub_title = __('For check more details you can go to your dashboard');
+        return view('api.order_notification', compact('image', 'title', 'sub_title'));
+    }
+
+    public function freshpay_retry(string $reference)
+    {
+        $user = auth()->guard('api')->user();
+        $transaction = FreshPayTransaction::where('reference', $reference)->firstOrFail();
+
+        abort_unless((string) optional($transaction->order)->user_id === (string) $user?->id, 403);
+
+        $this->paymentService->removeSessions();
+
+        return redirect()->route('payment-api.payment', [
+            'token' => request()->bearer_token,
+            'order_id' => $transaction->order_public_id,
+        ]);
     }
     public function stripe_success(Request $request) {
         $after_success_url = route('payment-api.webview-success-payment', ['bearer_token' => request()->bearer_token]);

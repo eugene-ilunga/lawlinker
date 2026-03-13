@@ -24,6 +24,11 @@ class FreshPayService
         return sprintf('%s-%s', $prefix, Str::upper(Str::random(14)));
     }
 
+    public function generateRandomKey(int $length = 32): string
+    {
+        return Str::random($length);
+    }
+
     public function debit(array $input): array
     {
         return $this->request('debit', $input);
@@ -113,13 +118,21 @@ class FreshPayService
             'currency' => $input['currency'] ?? 'USD',
             'action' => $action,
             'customer_number' => $input['customer_number'],
-            'firstname' => $input['firstname'] ?? 'TARMAC',
-            'lastname' => $input['lastname'] ?? 'TARMAC',
-            'email' => $input['email'] ?? 'kasisrael@gmail.com',
+            'firstname' => $input['firstname'] ?? ($settings->freshpay_firstname ?? 'Fresh'),
+            'lastname' => $input['lastname'] ?? ($settings->freshpay_lastname ?? 'Pay'),
+            'email' => $input['email'] ?? ($settings->freshpay_email ?? 'support@example.com'),
             'reference' => $input['reference'],
             'method' => strtolower($input['method']),
             'callback_url' => $input['callback_url'],
         ];
+
+        if (! empty($settings->freshpay_callback_aes_key)) {
+            $payload['encryption_key'] = $settings->freshpay_callback_aes_key;
+        }
+
+        if (! empty($settings->freshpay_callback_aes_iv)) {
+            $payload['encryption_iv'] = $settings->freshpay_callback_aes_iv;
+        }
 
         if ($endpoint === '' || $merchantId === '' || $merchantSecret === '') {
             Log::error('FreshPay missing credentials', [
