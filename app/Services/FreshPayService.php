@@ -89,8 +89,20 @@ class FreshPayService
             ];
         }
 
-        $status = strtolower((string) data_get($data, 'status', data_get($data, 'transaction_status', 'pending')));
-        $reference = (string) data_get($data, 'reference', data_get($data, 'transaction.reference', ''));
+        $status = strtolower((string) (
+            data_get($data, 'status')
+            ?? data_get($data, 'Status')
+            ?? data_get($data, 'transaction_status')
+            ?? data_get($data, 'transaction.Status')
+            ?? 'pending'
+        ));
+        $reference = (string) (
+            data_get($data, 'reference')
+            ?? data_get($data, 'Reference')
+            ?? data_get($data, 'transaction.reference')
+            ?? data_get($data, 'transaction.Reference')
+            ?? ''
+        );
 
         return [
             'ok' => true,
@@ -173,7 +185,11 @@ class FreshPayService
 
             return [
                 'ok' => $ok,
-                'message' => data_get($data, 'message', $ok ? __('FreshPay request sent.') : __('FreshPay request failed.')),
+                'message' => data_get($data, 'message')
+                    ?? data_get($data, 'Message')
+                    ?? data_get($data, 'comment')
+                    ?? data_get($data, 'Comment')
+                    ?? ($ok ? __('FreshPay request sent.') : __('FreshPay request failed.')),
                 'payload' => $payload,
                 'response' => $data,
                 'http_status' => $response->status(),
@@ -195,8 +211,16 @@ class FreshPayService
 
     private function isAcceptedResponse(mixed $data): bool
     {
-        $status = strtolower((string) data_get($data, 'status', ''));
-        $state = strtolower((string) data_get($data, 'data.status', ''));
+        $status = strtolower((string) (
+            data_get($data, 'status')
+            ?? data_get($data, 'Status')
+            ?? ''
+        ));
+        $state = strtolower((string) (
+            data_get($data, 'data.status')
+            ?? data_get($data, 'data.Status')
+            ?? ''
+        ));
 
         return in_array($status, ['success', 'ok', 'accepted', 'pending'], true)
             || in_array($state, ['success', 'ok', 'accepted', 'pending'], true)
