@@ -33,13 +33,20 @@
                         <h5 class="mb-0">Paiement FreshPay</h5>
                     </div>
                     <div class="card-body">
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                {{ $errors->first() }}
+                            </div>
+                        @endif
+
                         <form action="{{ $actionUrl }}" method="post">
                             @csrf
 
                             <div class="my-1 form-group">
                                 <label for="customer_number">Numéro de téléphone <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="customer_number" name="customer_number"
-                                    placeholder="0900000000/900000000" required>
+                                    placeholder="0900000000 / 0990000000 / 900000000"
+                                    value="{{ old('customer_number') }}" required>
                             </div>
 
                             <div class="my-1 form-group">
@@ -47,7 +54,7 @@
                                 <select id="method" name="method" class="form-control" required>
                                     <option value="">Sélectionnez un opérateur</option>
                                     @foreach ($operators as $operator)
-                                        <option value="{{ $operator }}">{{ strtoupper($operator) }}</option>
+                                        <option value="{{ $operator }}" {{ old('method') === $operator ? 'selected' : '' }}>{{ strtoupper($operator) }}</option>
                                     @endforeach
                                 </select>
                             </div>
