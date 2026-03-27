@@ -161,18 +161,6 @@
                         @endforeach
 
                     </div>
-                    <div class="d-flex gap-2 app-store-area">
-                        @if ($setting?->google_app_store_status)
-                            <a aria-label="Google play store" href="{{$setting?->google_app_store_link}}"><img
-                                    src="{{ asset($setting?->google_app_store_img) }}"
-                                    alt="google-play-store" loading="lazy"></a>
-                        @endif
-                        @if ($setting?->apple_app_store_status)
-                            <a aria-label="Apple play store" href="{{$setting?->apple_app_store_link}}"><img
-                                    src="{{ asset($setting?->apple_app_store_img) }}"
-                                    alt="apple-play-store" loading="lazy"></a>
-                        @endif
-                    </div>
                 </div>
             </div>
         </div>
